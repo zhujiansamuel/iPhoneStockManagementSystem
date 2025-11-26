@@ -1,0 +1,8 @@
+build/
+*.user
+*.o
+*.obj
+*.log
+*.tmp
+.DS_Store
+cmake-build-*/
