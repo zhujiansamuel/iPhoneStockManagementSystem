@@ -482,110 +482,157 @@ bool MainWindow::writeExportedItemsSheet(QXlsx::Document& xlsx,
 {
     using namespace QXlsx;
 
-    // → 创建或切换到 Exported_Items
+    // 重新生成 Exported_Items，避免残留
     if (xlsx.sheetNames().contains("Exported_Items"))
-        xlsx.selectSheet("Exported_Items");
-    else {
-        xlsx.addSheet("Exported_Items");
-        xlsx.selectSheet("Exported_Items");
-    }
+        xlsx.deleteSheet("Exported_Items");
+    xlsx.addSheet("Exported_Items");
+    xlsx.selectSheet("Exported_Items");
 
     // ===== 样式 =====
-    Format th;                // 表头
-    th.setFontBold(true);
+    Format top; top.setFontBold(true);
+    top.setHorizontalAlignment(Format::AlignHCenter);
+    top.setVerticalAlignment(Format::AlignVCenter);
+    top.setBorderStyle(Format::BorderMedium);
+
+    Format th; th.setFontBold(true);
     th.setHorizontalAlignment(Format::AlignHCenter);
-    th.setBorderStyle(Format::BorderThin);
+    th.setVerticalAlignment(Format::AlignVCenter);
+    th.setPatternBackgroundColor(QColor("#eaeaea"));
+    th.setBorderStyle(Format::BorderMedium);
 
-    Format center; center.setHorizontalAlignment(Format::AlignHCenter);
-    Format right;  right.setHorizontalAlignment(Format::AlignRight);
-    Format cell;   cell.setBorderStyle(Format::BorderThin);
+    Format tdL; tdL.setBorderStyle(Format::BorderThin);
+    tdL.setHorizontalAlignment(Format::AlignLeft);
+    tdL.setVerticalAlignment(Format::AlignVCenter);
 
-    // ===== 按 JAN 汇总（上半表）=====
-    QMap<QString, int> qtyByJan;
-    QMap<QString, QString> nameByJan;
+    Format tdC; tdC.setBorderStyle(Format::BorderThin);
+    tdC.setHorizontalAlignment(Format::AlignHCenter);
+    tdC.setVerticalAlignment(Format::AlignVCenter);
+
+    Format tdR; tdR.setBorderStyle(Format::BorderThin);
+    tdR.setHorizontalAlignment(Format::AlignRight);
+    tdR.setVerticalAlignment(Format::AlignVCenter);
+
+    // ===== 在函数内部按 JAN 聚合 =====
+    struct Agg { QString product; int qty = 0; double unit = 0.0; double amount = 0.0; };
+    QHash<QString, Agg> byJan;
+    QVector<QString> order; // 保持插入顺序
+    int totalQty = 0; double totalAmount = 0.0;
+
     for (const auto& e : rows) {
-        qtyByJan[e.jan] += e.qty;                     // 常规每行=1
-        if (!nameByJan.contains(e.jan))
-            nameByJan[e.jan] = e.productName;         // “型号 容量 颜色”
+        if (!byJan.contains(e.jan)) order.push_back(e.jan);
+        auto &a = byJan[e.jan];
+        if (a.product.isEmpty()) a.product = e.productName;
+        a.qty += e.qty;
+        a.unit = e.unitPrice;              // 目前为 0
+        a.amount += e.qty * e.unitPrice;   // 目前为 0
+        totalQty += e.qty;
+        totalAmount += e.qty * e.unitPrice;
     }
 
-    int totalQty = 0;
-    double totalAmount = 0.0;                         // 当前单价为 0
-    for (auto it = qtyByJan.cbegin(); it != qtyByJan.cend(); ++it)
-        totalQty += it.value();
+    // ===== 顶部合计行（第1行）=====
+    // A1-B1 合并写“合計”
+    xlsx.mergeCells(CellRange(1, 1, 1, 2), top);
+    xlsx.write(1, 1, QStringLiteral("合計"), top);
+    // C1: 合計件数
+    xlsx.write(1, 3, totalQty, top);
+    xlsx.mergeCells(CellRange(r, 5, r, 6), sumLab);                  // 合并 E1-F1
+    xlsx.write(r, 5, QStringLiteral("合計金額"), sumLab);            // 在 E1 写入合计标签（覆盖 E-F 合并区）
+    xlsx.write(r, 7, 0, moneyVal);                                  // G1 金额 0（不再 F+G 合并）
 
-    // —— 列坐标（与截图一致）
-    const int COL_B = 2; // B
-    const int COL_C = 3; // C
-    const int COL_E = 5; // E
-    const int COL_F = 6; // F
-    const int COL_G = 7; // G
+    // ===== 上半表头（第3行）=====
+    // A-B: JAN（合并）
+    xlsx.mergeCells(CellRange(3, 1, 3, 2), th);
+    xlsx.write(3, 1, "JAN", th);
+    xlsx.write(3, 3, "Product",      th); // C
+    // D 空列：也写入空值但保留边框
+    xlsx.write(3, 4, "",              th); // D
+    xlsx.write(3, 5, "Qty",          th); // E
+    xlsx.write(3, 6, "Unit Price",   th); // F
+    xlsx.write(3, 7, "Total Amount", th); // G
 
-    int r = 1;
-
-    // ===== 顶部合计条（B1/C1/E1/G1）=====
-    xlsx.write(r, COL_B, QStringLiteral("合計"), th);
-    xlsx.write(r, COL_C, totalQty, center);
-    xlsx.write(r, COL_E, QStringLiteral("合計金額"), th);
-    xlsx.write(r, COL_G, totalAmount, right);
-
-    // ===== 上半主表头（第 3 行）=====
-    r = 3;
-    xlsx.write(r, COL_B, "JAN",          th);
-    xlsx.write(r, COL_C, "Product",      th);
-    xlsx.write(r, COL_E, "Qty",          th);
-    xlsx.write(r, COL_F, "Unit Price",   th);
-    xlsx.write(r, COL_G, "Total Amount", th);
-    ++r;
-
-    // ===== 上半数据（每个 JAN 仅一行）=====
-    for (auto it = qtyByJan.cbegin(); it != qtyByJan.cend(); ++it) {
-        const QString jan   = it.key();
-        const int     qty   = it.value();
-        const QString pname = nameByJan.value(jan, jan);
-
-        xlsx.write(r, COL_B, jan,   cell);    // B: JAN
-        xlsx.write(r, COL_C, pname, cell);    // C: Product
-        xlsx.write(r, COL_E, qty,   center);  // E: Qty
-        xlsx.write(r, COL_F, 0,     right);   // F: Unit Price
-        xlsx.write(r, COL_G, 0,     right);   // G: Total Amount
+    // ===== 上半数据（第4行起；每个 JAN 一行）=====
+    int r = 4;
+    for (const auto& jan : order) {
+        const Agg& a = byJan[jan];
+        // A-B 合并写 JAN
+        xlsx.mergeCells(CellRange(r, 1, r, 2), tdL);
+        xlsx.write(r, 1, jan, tdL);
+        xlsx.write(r, 3, a.product, tdL);   // C: Product
+        xlsx.write(r, 4, "",        tdL);   // D: 空白列
+        xlsx.write(r, 5, a.qty,     tdC);   // E: Qty
+        xlsx.write(r, 6, a.unit,    tdR);   // F: Unit Price
+        xlsx.write(r, 7, a.amount,  tdR);   // G: Total Amount
         ++r;
     }
 
     // 空一行分隔
     ++r;
 
-    // ===== 明细表头（对齐截图：B/C/D/E/G）=====
-    xlsx.write(r, COL_B,   QStringLiteral("番号"),     th);
-    xlsx.write(r, COL_C,   QStringLiteral("JANコード"), th);
-    xlsx.write(r, COL_C+1, QStringLiteral("型番"),      th); // D
-    xlsx.write(r, COL_E,   QStringLiteral("数量"),      th);
-    xlsx.write(r, COL_G,   QStringLiteral("IMEI番号"),  th);
+    // ===== 明细表头 =====
+    xlsx.write(r, 1, QStringLiteral("番号"),     th); // A
+    xlsx.write(r, 2, QStringLiteral("JANコード"), th); // B
+    xlsx.write(r, 3, QStringLiteral("型番"),     th); // C
+    xlsx.write(r, 4, "",                        th); // D 空白列（保留边框）
+    xlsx.write(r, 5, QStringLiteral("数量"),     th); // E
+    // F-G 合并写 IMEI番号
+    xlsx.mergeCells(CellRange(r, 6, r, 7), th);
+    xlsx.write(r, 6, QStringLiteral("IMEI番号"), th);
     ++r;
 
-    // ===== 明细数据（逐台）=====
+    // ===== 明细数据（逐台；F-G 合并写 IMEI）=====
+    int seq = 1;
     for (const auto& e : rows) {
-        xlsx.write(r, COL_B,   e.seq,         center);  // 番号
-        xlsx.write(r, COL_C,   e.jan,         cell);    // JANコード
-        xlsx.write(r, COL_C+1, e.productName, cell);    // 型番
-        xlsx.write(r, COL_E,   e.qty,         center);  // 数量
-        xlsx.write(r, COL_G,   e.imei,        cell);    // IMEI番号（G 列）
+        xlsx.write(r, 1, seq++,        tdC); // A: 番号
+        xlsx.write(r, 2, e.jan,        tdL); // B: JAN
+        xlsx.write(r, 3, e.productName,tdL); // C: 型番
+        xlsx.write(r, 4, "",           tdL); // D: 空
+        xlsx.write(r, 5, e.qty,        tdC); // E: 数量
+        xlsx.mergeCells(CellRange(r, 6, r, 7), tdL);   // F-G 合并
+        xlsx.write(r, 6, e.imei,       tdL);          // IMEI
         ++r;
     }
 
-    // 空一行后输出“日付/ご署名”
+    // 空一行
     ++r;
-    xlsx.write(r, COL_C, QStringLiteral("日付：%1")
-                             .arg(QDateTime::currentDateTime()
-                                      .toString("yyyy-MM-dd HH:mm")));
-    xlsx.write(r, COL_F, QStringLiteral("ご署名："));
 
-    // ===== 列宽（贴近截图）=====
-    xlsx.setColumnWidth(COL_B, COL_B, 18);  // JAN
-    xlsx.setColumnWidth(COL_C, COL_C, 46);  // Product/型番
-    xlsx.setColumnWidth(COL_E, COL_E,  8);  // Qty/数量
-    xlsx.setColumnWidth(COL_F, COL_F, 12);  // Unit Price
-    xlsx.setColumnWidth(COL_G, COL_G, 14);  // Total Amount / IMEI番号
+    // ===== 页脚（无边框）：C 列日付，E 列ご署名 =====
+    xlsx.write(r, 3, QStringLiteral("日付：%1")
+                         .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm")));
+    xlsx.write(r, 5, QStringLiteral("ご署名："));
+
+    // ===== 列宽 =====
+    // —— 列宽：所有列自适应（按实际写入内容长度），D 列固定宽度 2 —— //
+    {
+        // 你函数里 r 已经是最后一行的下一行；我们用 [1, r] 范围扫描
+        const int firstCol = 1;   // A 列
+        const int lastCol  = 7;   // G 列
+        const int firstRow = 1;
+        const int lastRow  = r;   // 当前写入结束行
+
+        // 记录每列最大“字符数”
+        QVector<int> maxChars(lastCol + 1, 0);
+
+        for (int c = firstCol; c <= lastCol; ++c) {
+            if (c == 4) continue; // D 列稍后单独处理
+            for (int rr = firstRow; rr <= lastRow; ++rr) {
+                const QVariant v = xlsx.read(rr, c);
+                if (!v.isValid() || v.isNull()) continue;
+                const int len = v.toString().size();
+                if (len > maxChars[c]) maxChars[c] = len;
+            }
+        }
+
+        // 映射到 Excel 列宽单位：字符数 + padding（最小 6，上限 64），D=2
+        for (int c = firstCol; c <= lastCol; ++c) {
+            if (c == 4) {
+                xlsx.setColumnWidth(4, 4, 2.0);            // D 列固定为 2
+            } else {
+                const int chars = qMax(6, maxChars[c] + 2); // 预留左右空隙
+                const int clamped = qMin(chars, 64);
+                xlsx.setColumnWidth(c, c, static_cast<double>(clamped));
+            }
+        }
+    }
 
     if (totalAmountOut) *totalAmountOut = totalAmount;
     return true;
