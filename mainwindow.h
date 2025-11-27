@@ -134,6 +134,7 @@ private:
 
     // 状态栏绿色提示
     void showStatusOk(const QString& text);
+    void showStatusError(const QString& text);
 
     // 数据库
     bool initDatabase();
