@@ -209,6 +209,17 @@ static QString displayNameForJan(const QSqlDatabase& db,  // <== 这里改成 co
     return QStringLiteral("%1 %2 %3").arg(model, capacityLabel(cap), color);
 }
 
+
+// 该 JAN 是否存在于 catalog（＝取扱対象）
+static bool janExistsInCatalog(const QSqlDatabase& db, const QString& jan)
+{
+    QSqlQuery q(db);
+    q.prepare("SELECT 1 FROM catalog WHERE jan=? LIMIT 1");
+    q.addBindValue(jan);
+    if (!q.exec()) return false;
+    return q.next();
+}
+
 // —— 圆点图标 & 统一编号 —— //
 static QPixmap makeColorDotPixmap(const QColor& c, int d = 18) {
     QPixmap px(d, d);
@@ -244,6 +255,9 @@ static void renumberModel(QStandardItemModel* model) {
 }
 } // namespace
 
+
+
+
 // ====================== 工具：fit + 额外放大 ======================
 static void fitAndZoom(QGraphicsView *view,
                        double zoom = 1.3,
@@ -261,6 +275,9 @@ static const QString kCodeToRegister = QStringLiteral("5555555555555");   // 入
 static const QString kCodeToTemp     = QStringLiteral("3333333333333");   // 跳到 仮登録(lineEdit_4)
 static const QString kCodeResetCount = QStringLiteral("1111111111111");   // 计数器2清零
 static const QString kCodeFlushAll   = QStringLiteral("4444444444444");   // 仮登録列表批量落库
+// ✅ 新增：Excel 出力 / 表示
+static const QString kCodeExportXlsx = QStringLiteral("7777777777777");   // Excel出力（保存）
+static const QString kCodeOpenXlsx   = QStringLiteral("8888888888888");   // Excel表示（打开最近导出）
 
 // —— 工具：仅包含某种来源（优先读 RoleKind，兼容旧文本）—— //
 static bool modelOnlyHasPrefix(const QStandardItemModel* model, const QString& kindTag)
@@ -535,9 +552,15 @@ bool MainWindow::writeExportedItemsSheet(QXlsx::Document& xlsx,
     xlsx.write(1, 1, QStringLiteral("合計"), top);
     // C1: 合計件数
     xlsx.write(1, 3, totalQty, top);
-    xlsx.mergeCells(CellRange(r, 5, r, 6), sumLab);                  // 合并 E1-F1
-    xlsx.write(r, 5, QStringLiteral("合計金額"), sumLab);            // 在 E1 写入合计标签（覆盖 E-F 合并区）
-    xlsx.write(r, 7, 0, moneyVal);                                  // G1 金额 0（不再 F+G 合并）
+
+    // E1-F1 合并写“合計金額”
+    xlsx.mergeCells(CellRange(1, 5, 1, 6), top);
+    xlsx.write(1, 5, QStringLiteral("合計金額"), top);
+
+    // G1 写金额值（不再合并 F+G）
+    xlsx.write(1, 7, totalAmount, top);
+
+
 
     // ===== 上半表头（第3行）=====
     // A-B: JAN（合并）
@@ -880,6 +903,25 @@ void MainWindow::showStatusOk(const QString& text)
     });
 }
 
+
+void MainWindow::showStatusError(const QString& text)
+{
+    if (!ui->statusbar) return;
+
+    if (m_statusDefaultStyle.isEmpty())
+        m_statusDefaultStyle = ui->statusbar->styleSheet();
+
+    ui->statusbar->setStyleSheet(QStringLiteral("QStatusBar{ color:#d32f2f; }")); // 红色
+    ui->statusbar->showMessage(text, 3000);
+
+    QTimer::singleShot(3000, this, [this]{
+        ui->statusbar->setStyleSheet(m_statusDefaultStyle);
+    });
+}
+
+
+
+
 // ====================== 数据库 & 会话 ======================
 bool MainWindow::initDatabase()
 {
@@ -1138,6 +1180,10 @@ void MainWindow::refreshSessionRecordsView()
 
         auto* it = new QStandardItem(baseText);
         it->setData(baseText, RoleBaseText);
+        it->setData(c13, RoleCode13);              // ✅ 新增：右侧也记录原始 JAN
+        it->setData(i15, RoleImei15);              // ✅ 新增：右侧也记录原始 IMEI
+        it->setData(kind, RoleKind);               // ✅ 新增：右侧也记录种类（入荷登録）
+
         setItemColorDot(it, hex);   // 仅圆点上色，文字保持黑色
         m_modelSession->appendRow(it);
     }
@@ -1149,6 +1195,21 @@ void MainWindow::refreshSessionRecordsView()
 void MainWindow::onReg1Enter()
 {
     const QString v = ui->lineEdit->text().trimmed();
+    // Excel 出力 / 表示（777 / 888）
+    if (v == kCodeExportXlsx) {
+        ui->lineEdit->clear();
+        ui->lineEdit_2->clear();
+        exportToExcel();
+        ui->lineEdit->setFocus();
+        return;
+    }
+    if (v == kCodeOpenXlsx) {
+        ui->lineEdit->clear();
+        ui->lineEdit_2->clear();
+        openLastExport();
+        ui->lineEdit->setFocus();
+        return;
+    }
 
     if (v == kCodeFlushAll) {
         ui->lineEdit->clear();
@@ -1187,6 +1248,13 @@ void MainWindow::onReg1Enter()
 
     if (!ensureExactLenAndMark(ui->lineEdit, 13, ui->statusbar, QStringLiteral("入荷登録(前码)")))
         return;
+    // ✅ 新增：13桁JANが取扱対象かチェック（catalog 未登録はエラー）
+    if (!janExistsInCatalog(m_db, v)) {
+        ui->lineEdit->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
+        showStatusError(QStringLiteral("エラー：この13桁のJANコードは現在の取扱対象外です（カタログ未登録）。"));
+        ui->lineEdit->selectAll();
+        return;
+    }
 
     if (ui->label) { ui->label->setText(QStringLiteral("ログ")); ui->label->setStyleSheet(QString()); }
     ui->lineEdit_2->setFocus(); ui->lineEdit_2->selectAll();
@@ -1196,7 +1264,21 @@ void MainWindow::onReg2Enter()
 {
     const QString a = ui->lineEdit->text().trimmed();
     const QString b = ui->lineEdit_2->text().trimmed();
-
+    // Excel 出力 / 表示（777 / 888）
+    if (b == kCodeExportXlsx) {
+        ui->lineEdit->clear();
+        ui->lineEdit_2->clear();
+        exportToExcel();
+        ui->lineEdit->setFocus();
+        return;
+    }
+    if (b == kCodeOpenXlsx) {
+        ui->lineEdit->clear();
+        ui->lineEdit_2->clear();
+        openLastExport();
+        ui->lineEdit->setFocus();
+        return;
+    }
     if (b == kCodeResetCount) {
         m_lcd2Counter = 0; ui->lcdNumber_2->display(0);
         ui->lineEdit->clear(); ui->lineEdit_2->clear();
@@ -1312,7 +1394,21 @@ void MainWindow::onReg2Enter()
 void MainWindow::onTemp1Enter()
 {
     const QString v = ui->lineEdit_4->text().trimmed();
-
+    // Excel 出力 / 表示（777 / 888）
+    if (v == kCodeExportXlsx) {
+        ui->lineEdit_4->clear();
+        ui->lineEdit_3->clear();
+        exportToExcel();
+        ui->lineEdit_4->setFocus();
+        return;
+    }
+    if (v == kCodeOpenXlsx) {
+        ui->lineEdit_4->clear();
+        ui->lineEdit_3->clear();
+        openLastExport();
+        ui->lineEdit_4->setFocus();
+        return;
+    }
     if (v == kCodeFlushAll) {
         ui->lineEdit_4->clear(); ui->lineEdit_3->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
@@ -1343,6 +1439,13 @@ void MainWindow::onTemp1Enter()
 
     if (!ensureExactLenAndMark(ui->lineEdit_4, 13, ui->statusbar, QStringLiteral("仮登録(前码)")))
         return;
+    // ✅ 新增：13桁JANが取扱対象かチェック
+    if (!janExistsInCatalog(m_db, v)) {
+        ui->lineEdit_4->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
+        showStatusError(QStringLiteral("エラー：この13桁のJANコードは現在の取扱対象外です（カタログ未登録）。"));
+        ui->lineEdit_4->selectAll();
+        return;
+    }
 
     ui->lineEdit_3->setFocus(); ui->lineEdit_3->selectAll();
 }
@@ -1351,7 +1454,21 @@ void MainWindow::onTemp2Enter()
 {
     const QString a = ui->lineEdit_4->text().trimmed();
     const QString b = ui->lineEdit_3->text().trimmed();
-
+    // Excel 出力 / 表示（777 / 888）
+    if (b == kCodeExportXlsx) {
+        ui->lineEdit_4->clear();
+        ui->lineEdit_3->clear();
+        exportToExcel();
+        ui->lineEdit_4->setFocus();
+        return;
+    }
+    if (b == kCodeOpenXlsx) {
+        ui->lineEdit_4->clear();
+        ui->lineEdit_3->clear();
+        openLastExport();
+        ui->lineEdit_4->setFocus();
+        return;
+    }
     if (b == kCodeFlushAll) {
         ui->lineEdit_4->clear(); ui->lineEdit_3->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
@@ -1443,7 +1560,21 @@ void MainWindow::onTemp2Enter()
 void MainWindow::onSearch1Enter()
 {
     const QString v = ui->lineEdit_6->text().trimmed();
-
+    // Excel 出力 / 表示（777 / 888）
+    if (v == kCodeExportXlsx) {
+        ui->lineEdit_6->clear();
+        ui->lineEdit_5->clear();
+        exportToExcel();
+        ui->lineEdit_6->setFocus();
+        return;
+    }
+    if (v == kCodeOpenXlsx) {
+        ui->lineEdit_6->clear();
+        ui->lineEdit_5->clear();
+        openLastExport();
+        ui->lineEdit_6->setFocus();
+        return;
+    }
     if (v == kCodeFlushAll) {
         ui->lineEdit_6->clear(); ui->lineEdit_5->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
@@ -1472,6 +1603,13 @@ void MainWindow::onSearch1Enter()
 
     if (!ensureExactLenAndMark(ui->lineEdit_6, 13, ui->statusbar, QStringLiteral("検索(前码)")))
         return;
+    // ✅ 新增：13桁JANが取扱対象かチェック
+    if (!janExistsInCatalog(m_db, v)) {
+        ui->lineEdit_6->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
+        showStatusError(QStringLiteral("エラー：この13桁のJANコードは現在の取扱対象外です（カタログ未登録）。"));
+        ui->lineEdit_6->selectAll();
+        return;
+    }
 
     ui->lineEdit_5->setFocus(); ui->lineEdit_5->selectAll();
 }
@@ -1480,7 +1618,21 @@ void MainWindow::onSearch2Enter()
 {
     const QString a = ui->lineEdit_6->text().trimmed();
     const QString b = ui->lineEdit_5->text().trimmed();
-
+    // Excel 出力 / 表示（777 / 888）
+    if (b == kCodeExportXlsx) {
+        ui->lineEdit_6->clear();
+        ui->lineEdit_5->clear();
+        exportToExcel();
+        ui->lineEdit_6->setFocus();
+        return;
+    }
+    if (b == kCodeOpenXlsx) {
+        ui->lineEdit_6->clear();
+        ui->lineEdit_5->clear();
+        openLastExport();
+        ui->lineEdit_6->setFocus();
+        return;
+    }
     if (b == kCodeFlushAll) {
         ui->lineEdit_6->clear(); ui->lineEdit_5->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
@@ -1519,14 +1671,90 @@ void MainWindow::onSearch2Enter()
     }
 
     // 业务：検索显示（机型名 + 彩点 + 序号）
+
+    // 1) 取机型显示名（用于已入库时显示）
     QString hex;
     const QString disp = displayNameForJan(m_db, a, &hex);
     const QString left = disp.isEmpty() ? a : disp;
-    if (ui->label_13)
-        ui->label_13->setText(QStringLiteral("検索結果: %1 %2").arg(left, b));
 
+    // 2) 判断是否“已入库”（当前会话的 入荷登録）
+    const bool inStock = existsInboundImeiInCurrentSession(b);
+
+    // 3) 先清掉右侧列表之前的绿色高亮（不影响圆点图标）
+    for (int r = 0; r < m_modelSession->rowCount(); ++r) {
+        if (auto* it2 = m_modelSession->item(r))
+            it2->setForeground(QBrush()); // 恢复默认前景色（黑）
+    }
+
+    if (inStock) {
+        // 4) 在右侧 listView_2 中按 IMEI 定位该行
+        int foundRow = -1;
+        for (int r = 0; r < m_modelSession->rowCount(); ++r) {
+            auto* it2 = m_modelSession->item(r);
+            if (!it2) continue;
+
+            // 优先用我们刚写入的隐藏角色匹配 IMEI
+            const QString imeiRole = it2->data(RoleImei15).toString();
+            if (!imeiRole.isEmpty()) {
+                if (imeiRole == b) { foundRow = r; break; }
+            } else {
+                // 兼容旧数据：从文本末尾 " / IMEI" 解析
+                const QString textBase = it2->data(RoleBaseText).toString().isEmpty()
+                                             ? it2->text() : it2->data(RoleBaseText).toString();
+                const int slash = textBase.lastIndexOf('/');
+                if (slash >= 0) {
+                    const QString imeiInText = textBase.mid(slash + 1).trimmed();
+                    if (imeiInText == b) { foundRow = r; break; }
+                }
+            }
+        }
+
+        // 5) 找到后 → 右侧该行文字变绿色 + 定位滚动
+        if (foundRow >= 0) {
+            auto* it2 = m_modelSession->item(foundRow);
+            it2->setForeground(QBrush(QColor("#0a6d2a")));           // ✅ 绿色高亮
+            const QModelIndex idx = m_modelSession->index(foundRow, 0);
+            ui->listView_2->setCurrentIndex(idx);
+            ui->listView_2->scrollTo(idx);
+
+            // 与右侧一致的两位编号（01, 02, ...）
+            const QString no = QStringLiteral("%1").arg(foundRow + 1, 2, 10, QChar('0'));
+
+            // 6) label_13：显示序号 + 机型名
+            if (ui->label_13)
+                ui->label_13->setText(QStringLiteral("検索結果: [No.%1] %2").arg(no, left));
+        } else {
+            // 理论上不会发生（DB 有而列表没有），兜底只显示机型名
+            if (ui->label_13)
+                ui->label_13->setText(QStringLiteral("検索結果: %1").arg(left));
+        }
+    } else {
+        // 未入库：不显示机型名称，只提示“今回では未登録”
+        if (ui->label_13)
+            ui->label_13->setText(QStringLiteral("検索結果: 今回では未登録"));
+    }
+
+    // （可选）仍然把本次搜索加入左侧 listView，便于追踪
     const QString baseText = formatRecord(QStringLiteral("検索"), {left, b});
     addToListWithSource(baseText, ListSource::Search /* 黑字 */);
+    if (m_model->rowCount() > 0) {
+        if (auto* last = m_model->item(m_model->rowCount()-1)) {
+            last->setData(baseText, RoleBaseText);
+            last->setData(a, RoleCode13);
+            last->setData(b, RoleImei15);
+            last->setData(QStringLiteral("検索"), RoleKind);
+            setItemColorDot(last, hex); // 只设置彩色圆点
+        }
+    }
+    renumberModel(m_model);
+
+    if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("検索：已更新列表。"), 1500);
+
+    // 清理输入焦点
+    ui->lineEdit_6->clear(); ui->lineEdit_5->clear(); ui->lineEdit_6->setFocus();
+
+
+
     if (m_model->rowCount() > 0) {
         if (auto* last = m_model->item(m_model->rowCount()-1)) {
             last->setData(baseText, RoleBaseText);
