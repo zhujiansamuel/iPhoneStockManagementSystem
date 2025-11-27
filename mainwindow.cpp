@@ -47,6 +47,7 @@
 #include <xlsxworksheet.h>
 #include <xlsxworkbook.h>
 
+#include <xlsxcellrange.h>
 
 // ====== listView 里为每条记录保存原始数据的角色 & 工具 =======
 namespace {
@@ -481,92 +482,114 @@ bool MainWindow::writeExportedItemsSheet(QXlsx::Document& xlsx,
 {
     using namespace QXlsx;
 
-    // ---- 先按 JAN 汇总：Product 用目录名（机型 + 容量(GB/TB) + 颜色），Qty 为台数合计 ----
-    struct Agg { QString product; int qty = 0; };
-    QMap<QString, Agg> agg;
-    for (const auto& e : rows) {
-        auto &a = agg[e.jan];
-        if (a.product.isEmpty()) {
-            QString hex;
-            const QString disp = displayNameForJan(m_db, e.jan, &hex);
-            a.product = disp.isEmpty() ? e.jan : disp;
-        }
-        a.qty += e.qty; // 你的 ExportRow.qty 目前恒为 1
+    // → 创建或切换到 Exported_Items
+    if (xlsx.sheetNames().contains("Exported_Items"))
+        xlsx.selectSheet("Exported_Items");
+    else {
+        xlsx.addSheet("Exported_Items");
+        xlsx.selectSheet("Exported_Items");
     }
 
-    xlsx.addSheet("Exported_Items");
-    xlsx.selectSheet("Exported_Items");
-
-    // 样式
-    Format bold;  bold.setFontBold(true);
-    Format th;    th.setFontBold(true);
+    // ===== 样式 =====
+    Format th;                // 表头
+    th.setFontBold(true);
     th.setHorizontalAlignment(Format::AlignHCenter);
-    Format right; right.setHorizontalAlignment(Format::AlignRight);
-    Format center;center.setHorizontalAlignment(Format::AlignHCenter);
+    th.setBorderStyle(Format::BorderThin);
 
-    // 顶部 合計 / 合計金額
+    Format center; center.setHorizontalAlignment(Format::AlignHCenter);
+    Format right;  right.setHorizontalAlignment(Format::AlignRight);
+    Format cell;   cell.setBorderStyle(Format::BorderThin);
+
+    // ===== 按 JAN 汇总（上半表）=====
+    QMap<QString, int> qtyByJan;
+    QMap<QString, QString> nameByJan;
+    for (const auto& e : rows) {
+        qtyByJan[e.jan] += e.qty;                     // 常规每行=1
+        if (!nameByJan.contains(e.jan))
+            nameByJan[e.jan] = e.productName;         // “型号 容量 颜色”
+    }
+
     int totalQty = 0;
-    for (auto it = agg.cbegin(); it != agg.cend(); ++it) totalQty += it.value().qty;
+    double totalAmount = 0.0;                         // 当前单价为 0
+    for (auto it = qtyByJan.cbegin(); it != qtyByJan.cend(); ++it)
+        totalQty += it.value();
+
+    // —— 列坐标（与截图一致）
+    const int COL_B = 2; // B
+    const int COL_C = 3; // C
+    const int COL_E = 5; // E
+    const int COL_F = 6; // F
+    const int COL_G = 7; // G
 
     int r = 1;
-    xlsx.write(r, 1, QStringLiteral("合計"), bold);
-    xlsx.write(r, 2, totalQty, right);
-    xlsx.write(r, 4, QStringLiteral("合計金額"), bold);
-    xlsx.write(r, 5, 0, right);   // 暂无单价配置 → 金額先记 0
-    r += 2;
 
-    // 上半部分表头（按 JAN 汇总）
-    xlsx.write(r,1, "JAN",          th);
-    xlsx.write(r,2, "Product",      th);
-    xlsx.write(r,3, "Qty",          th);
-    xlsx.write(r,4, "Unit Price",   th);
-    xlsx.write(r,5, "Total Amount", th);
+    // ===== 顶部合计条（B1/C1/E1/G1）=====
+    xlsx.write(r, COL_B, QStringLiteral("合計"), th);
+    xlsx.write(r, COL_C, totalQty, center);
+    xlsx.write(r, COL_E, QStringLiteral("合計金額"), th);
+    xlsx.write(r, COL_G, totalAmount, right);
+
+    // ===== 上半主表头（第 3 行）=====
+    r = 3;
+    xlsx.write(r, COL_B, "JAN",          th);
+    xlsx.write(r, COL_C, "Product",      th);
+    xlsx.write(r, COL_E, "Qty",          th);
+    xlsx.write(r, COL_F, "Unit Price",   th);
+    xlsx.write(r, COL_G, "Total Amount", th);
     ++r;
 
-    // 上半部分数据（每个 JAN 仅 1 行）
-    for (auto it = agg.cbegin(); it != agg.cend(); ++it) {
-        xlsx.write(r,1, it.key());
-        xlsx.write(r,2, it.value().product);
-        xlsx.write(r,3, it.value().qty, center);
-        xlsx.write(r,4, 0, right);     // 单价=0
-        xlsx.write(r,5, 0, right);     // 金額=0
+    // ===== 上半数据（每个 JAN 仅一行）=====
+    for (auto it = qtyByJan.cbegin(); it != qtyByJan.cend(); ++it) {
+        const QString jan   = it.key();
+        const int     qty   = it.value();
+        const QString pname = nameByJan.value(jan, jan);
+
+        xlsx.write(r, COL_B, jan,   cell);    // B: JAN
+        xlsx.write(r, COL_C, pname, cell);    // C: Product
+        xlsx.write(r, COL_E, qty,   center);  // E: Qty
+        xlsx.write(r, COL_F, 0,     right);   // F: Unit Price
+        xlsx.write(r, COL_G, 0,     right);   // G: Total Amount
         ++r;
     }
 
-    // 空两行后，输出明细（逐台 IMEI）
-    r += 2;
-    xlsx.write(r,1, QStringLiteral("番号"),     th);
-    xlsx.write(r,2, QStringLiteral("JANコード"), th);
-    xlsx.write(r,3, QStringLiteral("型番"),     th);
-    xlsx.write(r,4, QStringLiteral("数量"),     th);
-    xlsx.write(r,5, QStringLiteral("IMEI番号"), th);
+    // 空一行分隔
     ++r;
 
+    // ===== 明细表头（对齐截图：B/C/D/E/G）=====
+    xlsx.write(r, COL_B,   QStringLiteral("番号"),     th);
+    xlsx.write(r, COL_C,   QStringLiteral("JANコード"), th);
+    xlsx.write(r, COL_C+1, QStringLiteral("型番"),      th); // D
+    xlsx.write(r, COL_E,   QStringLiteral("数量"),      th);
+    xlsx.write(r, COL_G,   QStringLiteral("IMEI番号"),  th);
+    ++r;
+
+    // ===== 明细数据（逐台）=====
     for (const auto& e : rows) {
-        xlsx.write(r,1, e.seq, center);
-        xlsx.write(r,2, e.jan);
-        xlsx.write(r,3, e.productName);
-        xlsx.write(r,4, e.qty, center); // 逐条=1
-        xlsx.write(r,5, e.imei);
+        xlsx.write(r, COL_B,   e.seq,         center);  // 番号
+        xlsx.write(r, COL_C,   e.jan,         cell);    // JANコード
+        xlsx.write(r, COL_C+1, e.productName, cell);    // 型番
+        xlsx.write(r, COL_E,   e.qty,         center);  // 数量
+        xlsx.write(r, COL_G,   e.imei,        cell);    // IMEI番号（G 列）
         ++r;
     }
 
-    // 日期/署名
+    // 空一行后输出“日付/ご署名”
     ++r;
-    xlsx.write(r,2, QStringLiteral("日付：%1")
-                         .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm")));
-    xlsx.write(r,5, QStringLiteral("ご署名："));
+    xlsx.write(r, COL_C, QStringLiteral("日付：%1")
+                             .arg(QDateTime::currentDateTime()
+                                      .toString("yyyy-MM-dd HH:mm")));
+    xlsx.write(r, COL_F, QStringLiteral("ご署名："));
 
-    // 列宽
-    xlsx.setColumnWidth(1, 1, 18);
-    xlsx.setColumnWidth(2, 2, 46);
-    xlsx.setColumnWidth(3, 3, 8);
-    xlsx.setColumnWidth(4, 5, 14);
+    // ===== 列宽（贴近截图）=====
+    xlsx.setColumnWidth(COL_B, COL_B, 18);  // JAN
+    xlsx.setColumnWidth(COL_C, COL_C, 46);  // Product/型番
+    xlsx.setColumnWidth(COL_E, COL_E,  8);  // Qty/数量
+    xlsx.setColumnWidth(COL_F, COL_F, 12);  // Unit Price
+    xlsx.setColumnWidth(COL_G, COL_G, 14);  // Total Amount / IMEI番号
 
-    if (totalAmountOut) *totalAmountOut = 0;
+    if (totalAmountOut) *totalAmountOut = totalAmount;
     return true;
 }
-
 
 bool MainWindow::writeWs3Sheet(QXlsx::Document& xlsx,
                                const QVector<ExportRow>& rows)
