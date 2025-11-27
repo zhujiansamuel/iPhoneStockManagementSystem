@@ -12,6 +12,7 @@
 #include <QVector>
 #include <QString>
 
+
 class QEvent;
 
 namespace QXlsx { class Document; }
