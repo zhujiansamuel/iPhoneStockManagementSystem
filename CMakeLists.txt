@@ -5,6 +5,14 @@ project(iPhoneStockManagementSystem VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---- Windows 特定设置 ----
+if(WIN32)
+    set(CMAKE_WIN32_EXECUTABLE ON)  # 创建 Windows GUI 应用（不显示控制台）
+    # 设置输出目录
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+endif()
+
 # ---- Qt 6 组件：Widgets + SvgWidgets + Sql（你代码里都用到了）----
 find_package(Qt6 REQUIRED COMPONENTS Widgets SvgWidgets Sql)
 
@@ -24,12 +32,27 @@ set(HDR_FILES
     mainwindow.h
 )
 
+# ---- Windows 资源文件 ----
+if(WIN32)
+    set(APP_ICON_RC "${CMAKE_CURRENT_SOURCE_DIR}/app.rc")
+    enable_language(RC)
+endif()
+
 # ---- 可执行程序 + 资源 ----
-qt_add_executable(${PROJECT_NAME}
-    ${SRC_FILES}
-    ${HDR_FILES}
-    ${UI_FILES}
-)
+if(WIN32)
+    qt_add_executable(${PROJECT_NAME} WIN32
+        ${SRC_FILES}
+        ${HDR_FILES}
+        ${UI_FILES}
+        ${APP_ICON_RC}
+    )
+else()
+    qt_add_executable(${PROJECT_NAME}
+        ${SRC_FILES}
+        ${HDR_FILES}
+        ${UI_FILES}
+    )
+endif()
 
 qt_add_resources(${PROJECT_NAME} "app-resources"
     PREFIX "/"
@@ -55,3 +78,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # ==================== 引入 QXlsx（FetchContent）====================
 add_subdirectory(QXlsx-master/QXlsx)
 target_link_libraries(${PROJECT_NAME} PRIVATE QXlsx::QXlsx)
+
+# ==================== Windows 部署配置 ====================
+if(WIN32)
+    # 设置应用程序属性
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        OUTPUT_NAME "iPhoneStockManagement"
+    )
+
+    # 使用 windeployqt 自动部署 Qt 依赖
+    # 在安装阶段，windeployqt 会被打包脚本调用
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION .
+    )
+endif()
