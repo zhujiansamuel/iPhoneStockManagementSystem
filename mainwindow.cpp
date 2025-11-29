@@ -22,6 +22,8 @@
 #include <QBrush>
 #include <QColor>
 #include <QIcon>
+#include <QGuiApplication>
+#include <QScreen>
 
 #include <QFile>
 #include <QDir>
@@ -220,6 +222,23 @@ static bool janExistsInCatalog(const QSqlDatabase& db, const QString& jan)
     return q.next();
 }
 
+// 获取 DPI 缩放因子的工具函数
+static qreal dpiScaleFactorFor(QWidget *w)
+{
+    QScreen *screen = nullptr;
+    if (w && w->window() && w->window()->windowHandle())
+        screen = w->window()->windowHandle()->screen();
+
+    if (!screen)
+        screen = QGuiApplication::primaryScreen();
+
+    if (!screen)
+        return 1.0;   // 兜底
+
+    // 以 96 DPI 作为"100%"的基准
+    return screen->logicalDotsPerInch() / 96.0;
+}
+
 // —— 圆点图标 & 统一编号 —— //
 static QPixmap makeColorDotPixmap(const QColor& c, int d = 18) {
     QPixmap px(d, d);
@@ -233,9 +252,19 @@ static QPixmap makeColorDotPixmap(const QColor& c, int d = 18) {
     p.drawEllipse(QRectF(1, 1, d-2, d-2));
     return px;
 }
-static void setItemColorDot(QStandardItem* it, const QString& hex, int diameter = 18) {
+static void setItemColorDot(QStandardItem* it,
+                            const QString& hex,
+                            QWidget *forDpiWidget)
+{
     if (!it) return;
-    if (hex.isEmpty()) { it->setData(QVariant(), Qt::DecorationRole); return; }
+    if (hex.isEmpty()) {
+        it->setData(QVariant(), Qt::DecorationRole);
+        return;
+    }
+
+    const qreal scale = dpiScaleFactorFor(forDpiWidget);
+    const int diameter = static_cast<int>(18 * scale + 0.5); // 基准 18 像素，根据 DPI 放大
+
     it->setData(QIcon(makeColorDotPixmap(QColor(hex), diameter)), Qt::DecorationRole);
 }
 static void renumberModel(QStandardItemModel* model) {
@@ -260,13 +289,20 @@ static void renumberModel(QStandardItemModel* model) {
 
 // ====================== 工具：fit + 额外放大 ======================
 static void fitAndZoom(QGraphicsView *view,
-                       double zoom = 1.3,
+                       double baseZoom = 1.3,
                        Qt::AspectRatioMode mode = Qt::KeepAspectRatio)
 {
     if (!view || !view->scene() || view->scene()->items().isEmpty()) return;
+
     view->resetTransform();
     view->fitInView(view->scene()->itemsBoundingRect(), mode);
-    if (zoom > 1.0) view->scale(zoom, zoom);
+
+    // 根据 DPI 叠加一层缩放，比如 125% 时大约是 1.25
+    const qreal dpiScale = dpiScaleFactorFor(view);
+    const qreal zoom = baseZoom * dpiScale;  // 100%≈1.3, 125%≈1.3×1.25
+
+    if (zoom > 1.0)
+        view->scale(zoom, zoom);
 }
 
 // —— 特殊码 —— //
@@ -389,8 +425,12 @@ MainWindow::MainWindow(QWidget *parent)
     // listView 绑定模型（左/右）+ 设置图标尺寸（大圆点）
     ui->listView->setModel(m_model);
     ui->listView_2->setModel(m_modelSession);
-    ui->listView->setIconSize(QSize(18, 18));
-    ui->listView_2->setIconSize(QSize(18, 18));
+
+    const qreal iconScale = dpiScaleFactorFor(this);
+    const int   iconD     = static_cast<int>(18 * iconScale + 0.5);
+
+    ui->listView->setIconSize(QSize(iconD, iconD));
+    ui->listView_2->setIconSize(QSize(iconD, iconD));
 
     // 仅这 6 个 QLineEdit 允许扫码输入
     m_scannerEdits = {
@@ -1184,7 +1224,7 @@ void MainWindow::refreshSessionRecordsView()
         it->setData(i15, RoleImei15);              // ✅ 新增：右侧也记录原始 IMEI
         it->setData(kind, RoleKind);               // ✅ 新增：右侧也记录种类（入荷登録）
 
-        setItemColorDot(it, hex);   // 仅圆点上色，文字保持黑色
+        setItemColorDot(it, hex, ui->listView_2);   // 仅圆点上色，文字保持黑色
         m_modelSession->appendRow(it);
     }
 
@@ -1347,7 +1387,7 @@ void MainWindow::onReg2Enter()
     it->setData(a, RoleCode13);
     it->setData(b, RoleImei15);
     it->setData(QStringLiteral("入荷登録"), RoleKind);
-    setItemColorDot(it, hex); // 只设置圆点
+    setItemColorDot(it, hex, ui->listView); // 只设置圆点
 
     m_model->appendRow(it);
     renumberModel(m_model);
@@ -1523,7 +1563,7 @@ void MainWindow::onTemp2Enter()
                 last->setData(a, RoleCode13);
                 last->setData(b, RoleImei15);
                 last->setData(QStringLiteral("仮登録"), RoleKind);
-                setItemColorDot(last, hex);
+                setItemColorDot(last, hex, ui->listView);
             }
         }
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("仮登録：IMEI 重复，已标红（不会入库）。"), 2000);
@@ -1541,7 +1581,7 @@ void MainWindow::onTemp2Enter()
                 last->setData(a, RoleCode13);
                 last->setData(b, RoleImei15);
                 last->setData(QStringLiteral("仮登録"), RoleKind);
-                setItemColorDot(last, hex);
+                setItemColorDot(last, hex, ui->listView);
             }
         }
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("仮登録：已加入。"), 1500);
@@ -1743,7 +1783,7 @@ void MainWindow::onSearch2Enter()
             last->setData(a, RoleCode13);
             last->setData(b, RoleImei15);
             last->setData(QStringLiteral("検索"), RoleKind);
-            setItemColorDot(last, hex); // 只设置彩色圆点
+            setItemColorDot(last, hex, ui->listView); // 只设置彩色圆点
         }
     }
     renumberModel(m_model);
@@ -1751,23 +1791,6 @@ void MainWindow::onSearch2Enter()
     if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("検索：已更新列表。"), 1500);
 
     // 清理输入焦点
-    ui->lineEdit_6->clear(); ui->lineEdit_5->clear(); ui->lineEdit_6->setFocus();
-
-
-
-    if (m_model->rowCount() > 0) {
-        if (auto* last = m_model->item(m_model->rowCount()-1)) {
-            last->setData(baseText, RoleBaseText);
-            last->setData(a, RoleCode13);
-            last->setData(b, RoleImei15);
-            last->setData(QStringLiteral("検索"), RoleKind);
-            setItemColorDot(last, hex);
-        }
-    }
-    renumberModel(m_model);
-
-    if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("検索：已更新列表。"), 1500);
-
     ui->lineEdit_6->clear(); ui->lineEdit_5->clear(); ui->lineEdit_6->setFocus();
 }
 
