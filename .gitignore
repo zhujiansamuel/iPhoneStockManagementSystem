@@ -1,4 +1,5 @@
 build/
+build-windows/
 *.user
 *.o
 *.obj
@@ -6,3 +7,13 @@ build/
 *.tmp
 .DS_Store
 cmake-build-*/
+
+# Windows 构建产物
+*.exe
+*.dll
+*.zip
+*.msi
+
+# 但保留资源文件
+!app.rc
+!app.ico
