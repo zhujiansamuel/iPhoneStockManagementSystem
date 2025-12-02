@@ -42,6 +42,7 @@
 #include <QUrl>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QSoundEffect>
 
 // QXlsx
 #include <xlsxdocument.h>
@@ -466,6 +467,34 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+// ====================== 音频提醒 ======================
+void MainWindow::playSound(const QString& soundName)
+{
+    // 构造资源路径
+    const QString resourcePath = QStringLiteral(":/sounds/%1.wav").arg(soundName);
+
+    // 检查资源是否存在
+    if (!QFile::exists(resourcePath)) {
+        // 静默失败，不影响程序运行
+        // qDebug() << "Sound file not found:" << resourcePath;
+        return;
+    }
+
+    // 使用 QSoundEffect 播放音频（异步，不阻塞）
+    QSoundEffect* effect = new QSoundEffect(this);
+    effect->setSource(QUrl::fromLocalFile(resourcePath));
+    effect->setVolume(0.7);  // 音量 70%
+
+    // 播放完成后自动删除
+    connect(effect, &QSoundEffect::playingChanged, this, [effect]() {
+        if (!effect->isPlaying()) {
+            effect->deleteLater();
+        }
+    });
+
+    effect->play();
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* e)
@@ -1174,6 +1203,7 @@ void MainWindow::onReg2Enter()
         ui->lineEdit->clear(); ui->lineEdit_2->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
             updateLcdFromDb(); refreshSessionRecordsView(); showStatusOk(QStringLiteral("記録完了"));
+            playSound("success");  // 播放假登录批量入库成功提示音
             m_model->clear(); m_source = ListSource::None; m_lcd2Counter = 0; ui->lcdNumber_2->display(0);
             if (ui->label_13) ui->label_13->setText(QStringLiteral("検索結果"));
             ui->lineEdit->setFocus();
@@ -1193,14 +1223,17 @@ void MainWindow::onReg2Enter()
         return;
     }
 
-    if (!ensureExactLenAndMark(ui->lineEdit_2, 15, ui->statusbar, QStringLiteral("入荷登録(后码)")))
+    if (!ensureExactLenAndMark(ui->lineEdit_2, 15, ui->statusbar, QStringLiteral("入荷登録(后码)"))) {
+        playSound("imei_error");  // 播放 IMEI 输入错误提示音
         return;
+    }
 
     if (a.size() != 13) {
         ui->lineEdit->clear();
         ui->lineEdit->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
         ui->lineEdit->setFocus(); ui->lineEdit->selectAll();
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("请先在 入荷登録(前码) 输入 13 位。"), 2500);
+        playSound("jan_error");  // 播放 JAN code 输入错误提示音
         return;
     }
 
@@ -1210,6 +1243,7 @@ void MainWindow::onReg2Enter()
         ui->lineEdit_2->clear();
         ui->lineEdit_2->setFocus(); ui->lineEdit_2->selectAll();
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("入荷登録：IMEI 重複，未记录。"), 2000);
+        playSound("imei_duplicate");  // 播放 IMEI 重复提示音
         return;
     }
 
@@ -1239,6 +1273,7 @@ void MainWindow::onReg2Enter()
 
     // 提示 + label 显示机型名（按机型色）
     showStatusOk(QStringLiteral("記録完了"));
+    playSound("success");  // 播放入库成功提示音
     if (ui->label) {
         if (!disp.isEmpty()) {
             ui->label->setText(disp);
@@ -1253,6 +1288,9 @@ void MainWindow::onReg2Enter()
     // 计数器：lcdNumber_2 +1 且 /10 清零；lcdNumber 从 DB 刷新
     m_lcd2Counter = (m_lcd2Counter + 1) % 10;
     ui->lcdNumber_2->display(m_lcd2Counter);
+    if (m_lcd2Counter == 0) {
+        playSound("count_reset");  // 计数器清零时播放提示音
+    }
     updateLcdFromDb();
     refreshSessionRecordsView();
 
@@ -1323,6 +1361,7 @@ void MainWindow::onTemp2Enter()
         ui->lineEdit_4->clear(); ui->lineEdit_3->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
             updateLcdFromDb(); refreshSessionRecordsView(); showStatusOk(QStringLiteral("記録完了"));
+            playSound("success");  // 播放假登录批量入库成功提示音
             m_model->clear(); m_source = ListSource::None; m_lcd2Counter = 0; ui->lcdNumber_2->display(0);
         }
         return;
@@ -1347,14 +1386,17 @@ void MainWindow::onTemp2Enter()
         return;
     }
 
-    if (!ensureExactLenAndMark(ui->lineEdit_3, 15, ui->statusbar, QStringLiteral("仮登録(后码)")))
+    if (!ensureExactLenAndMark(ui->lineEdit_3, 15, ui->statusbar, QStringLiteral("仮登録(后码)"))) {
+        playSound("imei_error");  // 播放 IMEI 输入错误提示音
         return;
+    }
 
     if (a.size() != 13) {
         ui->lineEdit_4->clear();
         ui->lineEdit_4->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
         ui->lineEdit_4->setFocus(); ui->lineEdit_4->selectAll();
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("请先在 仮登録(前码) 输入 13 位。"), 2500);
+        playSound("jan_error");  // 播放 JAN code 输入错误提示音
         return;
     }
 
@@ -1377,6 +1419,7 @@ void MainWindow::onTemp2Enter()
             }
         }
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("仮登録：IMEI 重复，已标红（不会入库）。"), 2000);
+        playSound("imei_duplicate");  // 播放 IMEI 重复提示音
         if (ui->label_8) {
             ui->label_8->setText(QStringLiteral("仮登録結果: %1（重複）").arg(left));
             ui->label_8->setStyleSheet(QStringLiteral("QLabel{ color:#d32f2f; font-weight:600; }"));
@@ -1452,6 +1495,7 @@ void MainWindow::onSearch2Enter()
         ui->lineEdit_6->clear(); ui->lineEdit_5->clear();
         if (hasTempInListView() && flushAllListItemsToDb()) {
             updateLcdFromDb(); refreshSessionRecordsView(); showStatusOk(QStringLiteral("記録完了"));
+            playSound("success");  // 播放假登录批量入库成功提示音
             m_model->clear(); m_source = ListSource::None; m_lcd2Counter = 0; ui->lcdNumber_2->display(0);
         }
         return;
@@ -1474,14 +1518,17 @@ void MainWindow::onSearch2Enter()
         return;
     }
 
-    if (!ensureExactLenAndMark(ui->lineEdit_5, 15, ui->statusbar, QStringLiteral("検索(后码)")))
+    if (!ensureExactLenAndMark(ui->lineEdit_5, 15, ui->statusbar, QStringLiteral("検索(后码)"))) {
+        playSound("imei_error");  // 播放 IMEI 输入错误提示音
         return;
+    }
 
     if (a.size() != 13) {
         ui->lineEdit_6->clear();
         ui->lineEdit_6->setStyleSheet("QLineEdit { background-color: #ffcccc; }");
         ui->lineEdit_6->setFocus(); ui->lineEdit_6->selectAll();
         if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("请先在 検索(前码) 输入 13 位。"), 2500);
+        playSound("jan_error");  // 播放 JAN code 输入错误提示音
         return;
     }
 

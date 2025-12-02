@@ -162,6 +162,9 @@ private:
     bool writeWs3Sheet(QXlsx::Document& xlsx,
                        const QVector<ExportRow>& rows);
 
+    // 音频提醒
+    void playSound(const QString& soundName);
+
 
 };
 
