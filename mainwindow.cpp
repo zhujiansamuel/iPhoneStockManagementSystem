@@ -479,13 +479,13 @@ void MainWindow::playSound(const QString& soundName)
     // 检查资源是否存在
     if (!QFile::exists(resourcePath)) {
         // 静默失败，不影响程序运行
-        // qDebug() << "Sound file not found:" << resourcePath;
+        qDebug() << "Sound file not found:" << resourcePath;
         return;
     }
 
     // 使用 QSoundEffect 播放音频（异步，不阻塞）
     QSoundEffect* effect = new QSoundEffect(this);
-    effect->setSource(QUrl::fromLocalFile(resourcePath));
+    effect->setSource(QUrl(resourcePath));  // 直接使用 Qt 资源路径
     effect->setVolume(0.7);  // 音量 70%
 
     // 播放完成后自动删除
@@ -496,6 +496,7 @@ void MainWindow::playSound(const QString& soundName)
     });
 
     effect->play();
+    qDebug() << "Playing sound:" << resourcePath;
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* e)
