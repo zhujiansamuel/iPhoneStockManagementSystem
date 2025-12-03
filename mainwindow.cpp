@@ -42,6 +42,7 @@
 #include <QUrl>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QWindow>
 #include <QSoundEffect>
 
 // QXlsx
