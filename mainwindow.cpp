@@ -478,25 +478,51 @@ void MainWindow::playSound(const QString& soundName)
 
     // 检查资源是否存在
     if (!QFile::exists(resourcePath)) {
-        // 静默失败，不影响程序运行
         qDebug() << "Sound file not found:" << resourcePath;
         return;
     }
 
+    qDebug() << "Attempting to play sound:" << resourcePath;
+
     // 使用 QSoundEffect 播放音频（异步，不阻塞）
     QSoundEffect* effect = new QSoundEffect(this);
-    effect->setSource(QUrl(resourcePath));  // 直接使用 Qt 资源路径
-    effect->setVolume(0.7);  // 音量 70%
 
-    // 播放完成后自动删除
-    connect(effect, &QSoundEffect::playingChanged, this, [effect]() {
+    // 连接状态变化信号以调试
+    connect(effect, &QSoundEffect::statusChanged, this, [effect, resourcePath]() {
+        qDebug() << "Sound status changed:" << resourcePath << "Status:" << effect->status();
+        if (effect->status() == QSoundEffect::Error) {
+            qDebug() << "Sound error!";
+        }
+    });
+
+    // 连接加载完成信号
+    connect(effect, &QSoundEffect::loadedChanged, this, [effect, resourcePath]() {
+        qDebug() << "Sound loaded changed:" << resourcePath << "IsLoaded:" << effect->isLoaded();
+        if (effect->isLoaded()) {
+            qDebug() << "Sound is loaded, playing now...";
+            effect->play();
+        }
+    });
+
+    // 连接播放状态变化信号
+    connect(effect, &QSoundEffect::playingChanged, this, [effect, resourcePath]() {
+        qDebug() << "Playing changed:" << resourcePath << "IsPlaying:" << effect->isPlaying();
         if (!effect->isPlaying()) {
+            qDebug() << "Sound finished playing, deleting effect";
             effect->deleteLater();
         }
     });
 
-    effect->play();
-    qDebug() << "Playing sound:" << resourcePath;
+    effect->setSource(QUrl(resourcePath));  // 直接使用 Qt 资源路径
+    effect->setVolume(1.0);  // 音量 100%
+
+    qDebug() << "Source set. Status:" << effect->status() << "IsLoaded:" << effect->isLoaded();
+
+    // 如果已经加载完成，直接播放
+    if (effect->isLoaded()) {
+        qDebug() << "Already loaded, playing immediately...";
+        effect->play();
+    }
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* e)
