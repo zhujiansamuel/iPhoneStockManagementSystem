@@ -81,20 +81,25 @@ sounds/
 
 ## 启用音频功能
 
-音频文件准备好后，需要修改 `resources.qrc` 文件以启用音频功能：
+音频文件准备好后，需要修改 `CMakeLists.txt` 文件以启用音频功能：
 
-1. 打开项目根目录下的 `resources.qrc` 文件
-2. 找到音频文件部分（带有注释的部分）
-3. 取消注释音频文件的引用：
+1. 打开项目根目录下的 `CMakeLists.txt` 文件
+2. 找到音频资源部分（带有注释的部分，大约在第 71-84 行）
+3. 取消注释音频资源的 qt_add_resources 块：
 
-```xml
-<!-- 音频文件 -->
-<file alias="sounds/success.wav">sounds/success.wav</file>
-<file alias="sounds/jan_error.wav">sounds/jan_error.wav</file>
-<file alias="sounds/jan_not_found.wav">sounds/jan_not_found.wav</file>
-<file alias="sounds/imei_error.wav">sounds/imei_error.wav</file>
-<file alias="sounds/imei_duplicate.wav">sounds/imei_duplicate.wav</file>
-<file alias="sounds/count_reset.wav">sounds/count_reset.wav</file>
+```cmake
+# 将这部分的注释去掉
+qt_add_resources(${PROJECT_NAME} "sound-resources"
+    PREFIX "/sounds"
+    BASE "sounds"
+    FILES
+        sounds/success.wav
+        sounds/jan_error.wav
+        sounds/jan_not_found.wav
+        sounds/imei_error.wav
+        sounds/imei_duplicate.wav
+        sounds/count_reset.wav
+)
 ```
 
 4. 保存文件并重新编译项目
@@ -102,10 +107,10 @@ sounds/
 ## 注意事项
 
 1. 文件名必须严格匹配上述名称（区分大小写）
-2. 如果音频文件引用在 resources.qrc 中被注释掉，程序会静默跳过音频播放，不会影响正常功能
+2. 如果音频资源在 CMakeLists.txt 中被注释掉，程序会静默跳过音频播放，不会影响正常功能
 3. 音频文件会被编译到程序中，不需要单独分发
 4. 可以随时替换音频文件，重新编译即可生效
-5. **必须先添加音频文件，再取消 resources.qrc 中的注释，否则编译会失败**
+5. **必须先添加音频文件，再取消 CMakeLists.txt 中的注释，否则编译会失败**
 
 ## 测试音频
 

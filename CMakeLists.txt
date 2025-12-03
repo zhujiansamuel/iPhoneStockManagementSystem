@@ -68,6 +68,21 @@ qt_add_resources(${PROJECT_NAME} "app-resources"
         pic/Excel_Display.svg
 )
 
+# ---- 音频资源（需要时取消注释）----
+# 注意：请先在 sounds/ 目录下添加 WAV 音频文件，然后取消下面的注释
+# 详见 sounds/README.md 了解如何生成音频文件
+# qt_add_resources(${PROJECT_NAME} "sound-resources"
+#     PREFIX "/sounds"
+#     BASE "sounds"
+#     FILES
+#         sounds/success.wav
+#         sounds/jan_error.wav
+#         sounds/jan_not_found.wav
+#         sounds/imei_error.wav
+#         sounds/imei_duplicate.wav
+#         sounds/count_reset.wav
+# )
+
 # ---- 链接 Qt ----
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
