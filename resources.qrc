@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="/">
+  <file alias="Reset.svg">pic/Reset.svg</file>
+  <file alias="Search.svg">pic/Search.svg</file>
+  <file alias="Stock_Registration.svg">pic/Stock_Registration.svg</file>
+  <file alias="Temporary_Registration.svg">pic/Temporary_Registration.svg</file>
+  <file alias="Temporary_Registration_Write.svg">pic/Temporary_Registration_Write.svg</file>
+  <file alias="View_Summary.svg">pic/View_Summary.svg</file>
+  <file alias="Excel_Output.svg">pic/Excel_Output.svg</file>
+  <file alias="Excel_Display.svg">pic/Excel_Display.svg</file>
+  </qresource>
+</RCC>
