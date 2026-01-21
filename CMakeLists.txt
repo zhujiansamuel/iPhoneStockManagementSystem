@@ -13,8 +13,8 @@ if(WIN32)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
-# ---- Qt 6 组件：Widgets + SvgWidgets + Sql + Multimedia ----
-find_package(Qt6 REQUIRED COMPONENTS Widgets SvgWidgets Sql Multimedia)
+# ---- Qt 6 组件：Widgets + SvgWidgets + Sql + Multimedia + Network ----
+find_package(Qt6 REQUIRED COMPONENTS Widgets SvgWidgets Sql Multimedia Network)
 
 qt_standard_project_setup()
 
@@ -89,6 +89,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::SvgWidgets
     Qt6::Sql
     Qt6::Multimedia
+    Qt6::Network
 )
 
 # ==================== 引入 QXlsx（FetchContent）====================

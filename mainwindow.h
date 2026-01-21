@@ -11,7 +11,7 @@
 #include <QColor>
 #include <QVector>
 #include <QString>
-
+#include <QNetworkAccessManager>
 
 
 class QEvent;
@@ -116,6 +116,9 @@ private:
     QString      m_sessionId;
     QString      m_statusDefaultStyle;
 
+    // —— 网络请求 —— //
+    QNetworkAccessManager* m_networkManager;
+
     // 初始化
     void initConnections();
     void initValidators();
@@ -167,6 +170,8 @@ private:
     // 音频提醒
     void playSound(const QString& soundName);
 
+    // 网络请求
+    void sendPostRequest(const QVector<ExportRow>& rows);
 
 };
 
