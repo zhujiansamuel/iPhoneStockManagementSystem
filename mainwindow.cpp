@@ -44,6 +44,11 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QSoundEffect>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 // QXlsx
 #include <xlsxdocument.h>
@@ -393,6 +398,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_modelSession(new QStandardItemModel(this))
     , m_highlighter(nullptr)
     , m_guard(nullptr)
+    , m_networkManager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
 
@@ -818,6 +824,9 @@ void MainWindow::exportToExcel()
 
     m_lastExportPath = path;
     showStatusOk(QStringLiteral("Excel出力完了：%1").arg(path));
+
+    // 发送POST请求到API
+    sendPostRequest(rows);
 }
 
 void MainWindow::openLastExport()
@@ -827,6 +836,64 @@ void MainWindow::openLastExport()
         return;
     }
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_lastExportPath));
+}
+
+void MainWindow::sendPostRequest(const QVector<ExportRow>& rows)
+{
+    // 获取用户输入的信息
+    QString username = ui->lineEdit_8->text().trimmed();
+    if (username.isEmpty()) {
+        username = QStringLiteral("customer");
+    }
+
+    QString batchLevel1 = ui->lineEdit_7->text().trimmed();
+    QString batchLevel2 = ui->lineEdit_9->text().trimmed();
+
+    // 生成当前时间的ISO 8601格式字符串
+    QString currentTime = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+    // 构建inventory_data数组
+    QJsonArray inventoryData;
+    for (const auto& row : rows) {
+        QJsonObject item;
+        item["jan"] = row.jan;
+        item["imei"] = row.imei;
+        inventoryData.append(item);
+    }
+
+    // 构建inventory_times对象
+    QJsonObject inventoryTimes;
+    inventoryTimes["actual_arrival_at"] = currentTime;
+
+    // 构建完整的JSON请求体
+    QJsonObject jsonObj;
+    jsonObj["username"] = username;
+    jsonObj["visit_time"] = currentTime;
+    jsonObj["inventory_data"] = inventoryData;
+    jsonObj["inventory_times"] = inventoryTimes;
+
+    // batch_level_1和batch_level_2只在不为空时添加
+    if (!batchLevel1.isEmpty()) {
+        jsonObj["batch_level_1"] = batchLevel1;
+    }
+    if (!batchLevel2.isEmpty()) {
+        jsonObj["batch_level_2"] = batchLevel2;
+    }
+
+    jsonObj["batch_level_3"] = m_sessionId;
+
+    // 转换为JSON文档
+    QJsonDocument jsonDoc(jsonObj);
+    QByteArray jsonData = jsonDoc.toJson();
+
+    // 构建网络请求
+    QNetworkRequest request(QUrl("https://data.yamaguchi.lan/api/aggregation/legal-person-offline/create-with-inventory/"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    // TODO: 在此处替换为实际的Bearer Token
+    request.setRawHeader("Authorization", "Bearer YOUR_BATCH_STATS_API_TOKEN");
+
+    // 发送POST请求（不等待响应，失败时不做处理）
+    m_networkManager->post(request, jsonData);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *e)
