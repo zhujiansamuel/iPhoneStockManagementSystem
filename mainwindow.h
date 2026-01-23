@@ -100,6 +100,10 @@ private slots:
     // tab_2: plainTextEdit解析
     void onPlainTextEnter(); // plainTextEdit -> Enter -> 解析V3/V4数据
 
+    // tab_2: lineEdit_10/lineEdit_11 单独输入
+    void onTab2JanEnter();   // lineEdit_10 -> Enter -> 校验JAN/跳转
+    void onTab2ImeiEnter();  // lineEdit_11 -> Enter -> 校验IMEI/写入
+
 private:
     enum class ListSource { None, Search, Temp };
 
@@ -114,6 +118,7 @@ private:
     ListSource          m_source = ListSource::None;
     int                 m_lcd2Counter = 0;   // lcdNumber_2 的本地计数器（0~9）
     int                 m_tab2Counter = 0;   // tab_2 lcdNumber_3 的计数器
+    QString             m_tab2PendingJan;    // tab_2 lineEdit_10 验证通过的JAN（等待IMEI输入）
 
     // —— 数据库/会话 —— //
     QSqlDatabase m_db;
@@ -183,7 +188,8 @@ private:
     QVector<ParsedRecord> parseV4Line(const QString& line, QStringList* errors);
     QVector<ParsedRecord> parseV3Line(const QString& line, QStringList* errors);
     void refreshTab2ListView();
-    void showTab2Error(const QString& text);
+    void showTab2Error(const QString& text);      // label_3 错误提示（plainTextEdit用）
+    void showTab2Label2Log(const QString& text, bool isError = false);  // label_2 操作日志（lineEdit_10/11用）
 
     // 网络请求
     void sendPostRequest(const QVector<ExportRow>& rows);
