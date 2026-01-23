@@ -97,6 +97,8 @@ private slots:
     void exportToExcel();    // 生成 Excel
     void openLastExport();   // 打开最近一次导出文件
 
+    // tab_2: plainTextEdit解析
+    void onPlainTextEnter(); // plainTextEdit -> Enter -> 解析V3/V4数据
 
 private:
     enum class ListSource { None, Search, Temp };
@@ -105,11 +107,13 @@ private:
     Ui::MainWindow *ui;
     QStandardItemModel* m_model;         // 左侧 listView
     QStandardItemModel* m_modelSession;  // 右侧 listView_2（会话记录）
+    QStandardItemModel* m_modelTab2;     // tab_2 listView_3
     QList<QLineEdit*>   m_scannerEdits;
     FocusHighlighter*   m_highlighter;
     ScannerOnlyGuard*   m_guard;
     ListSource          m_source = ListSource::None;
     int                 m_lcd2Counter = 0;   // lcdNumber_2 的本地计数器（0~9）
+    int                 m_tab2Counter = 0;   // tab_2 lcdNumber_3 的计数器
 
     // —— 数据库/会话 —— //
     QSqlDatabase m_db;
@@ -169,6 +173,17 @@ private:
 
     // 音频提醒
     void playSound(const QString& soundName);
+
+    // tab_2 解析辅助
+    struct ParsedRecord {
+        QString jan;    // 13位JAN
+        QString imei;   // 15位IMEI 或 11位序列号
+        bool    valid = false;
+    };
+    QVector<ParsedRecord> parseV4Line(const QString& line, QStringList* errors);
+    QVector<ParsedRecord> parseV3Line(const QString& line, QStringList* errors);
+    void refreshTab2ListView();
+    void showTab2Error(const QString& text);
 
     // 网络请求
     void sendPostRequest(const QVector<ExportRow>& rows);

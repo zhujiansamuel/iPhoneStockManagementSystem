@@ -396,8 +396,10 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , m_model(new QStandardItemModel(this))
     , m_modelSession(new QStandardItemModel(this))
+    , m_modelTab2(new QStandardItemModel(this))
     , m_highlighter(nullptr)
     , m_guard(nullptr)
+    , m_tab2Counter(0)
     , m_networkManager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
@@ -415,6 +417,7 @@ MainWindow::MainWindow(QWidget *parent)
     // listView 绑定模型（左/右）+ 设置图标尺寸（大圆点）
     ui->listView->setModel(m_model);
     ui->listView_2->setModel(m_modelSession);
+    ui->listView_3->setModel(m_modelTab2);  // tab_2 的 listView_3
 
     // 根据 DPI 设置图标尺寸
     const qreal iconScale = dpiScaleFactorFor(this);
@@ -422,6 +425,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->listView->setIconSize(QSize(iconD, iconD));
     ui->listView_2->setIconSize(QSize(iconD, iconD));
+    ui->listView_3->setIconSize(QSize(iconD, iconD));
 
     // 仅这 6 个 QLineEdit 允许扫码输入
     m_scannerEdits = {
@@ -461,6 +465,10 @@ MainWindow::MainWindow(QWidget *parent)
     // 同步计数与右侧会话列表
     updateLcdFromDb();
     refreshSessionRecordsView();
+
+    // tab_2: 初始化计数器和从数据库刷新listView_3
+    ui->lcdNumber_3->display(0);
+    refreshTab2ListView();
 
     // 默认焦点
     ui->lineEdit->setFocus();
@@ -529,6 +537,16 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* e)
         }
         return true;
     }
+
+    // tab_2: plainTextEdit 的 Enter 键检测
+    if (obj == ui->plainTextEdit && e->type() == QEvent::KeyPress) {
+        auto* keyEvent = static_cast<QKeyEvent*>(e);
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            onPlainTextEnter();
+            return true;  // 吞掉事件，不插入换行
+        }
+    }
+
     return QMainWindow::eventFilter(obj, e);
 }
 
@@ -936,9 +954,13 @@ void MainWindow::initConnections()
     connect(ui->lineEdit_4, &QLineEdit::returnPressed, this, &MainWindow::onTemp1Enter);
     connect(ui->lineEdit_3, &QLineEdit::returnPressed, this, &MainWindow::onTemp2Enter);
 
-    // “リセット”按钮
+    // "リセット"按钮
     if (ui->pushButton)
         connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::onResetClicked);
+
+    // tab_2: plainTextEdit 的 Enter 键检测（通过 eventFilter）
+    if (ui->plainTextEdit)
+        ui->plainTextEdit->installEventFilter(this);
 }
 
 // ====================== SVG 显示 ======================
@@ -1934,4 +1956,270 @@ void MainWindow::onResetClicked()
 
     ui->lineEdit->setFocus();
     if (ui->statusbar) ui->statusbar->showMessage(QStringLiteral("已重置（计数器2 已清零）。"), 1500);
+}
+
+// ====================== tab_2: 解析V4格式 ======================
+QVector<MainWindow::ParsedRecord> MainWindow::parseV4Line(const QString& line, QStringList* errors)
+{
+    QVector<ParsedRecord> results;
+
+    // 支持全角逗号和半角逗号
+    QString normalized = line;
+    normalized.replace(QStringLiteral("，"), QStringLiteral(","));
+    const QStringList parts = normalized.split(QStringLiteral(","), Qt::SkipEmptyParts);
+
+    QString jan;
+    QString imei;
+
+    for (const QString& part : parts) {
+        const QString p = part.trimmed();
+
+        // 提取GTIN (JAN)
+        if (p.startsWith(QStringLiteral("GTIN"), Qt::CaseInsensitive)) {
+            QString gtinValue = p.mid(4);  // 去掉"GTIN"前缀
+            // 去掉前导0
+            while (gtinValue.startsWith('0') && gtinValue.size() > 13) {
+                gtinValue = gtinValue.mid(1);
+            }
+            if (gtinValue.size() == 13) {
+                jan = gtinValue;
+            } else {
+                if (errors) errors->append(QStringLiteral("JANコードは13桁である必要があります（現在：%1桁）").arg(gtinValue.size()));
+            }
+        }
+
+        // 提取IMEI
+        if (p.startsWith(QStringLiteral("IMEI"), Qt::CaseInsensitive)) {
+            QString imeiValue = p.mid(4);  // 去掉"IMEI"前缀
+            if (imeiValue.size() == 15) {
+                imei = imeiValue;
+            } else {
+                if (errors) errors->append(QStringLiteral("IMEIは15桁である必要があります（現在：%1桁）").arg(imeiValue.size()));
+            }
+        }
+    }
+
+    // 如果JAN和IMEI都有效，则创建记录
+    if (!jan.isEmpty() && !imei.isEmpty()) {
+        ParsedRecord rec;
+        rec.jan = jan;
+        rec.imei = imei;
+        rec.valid = true;
+        results.append(rec);
+    }
+
+    return results;
+}
+
+// ====================== tab_2: 解析V3格式 ======================
+QVector<MainWindow::ParsedRecord> MainWindow::parseV3Line(const QString& line, QStringList* errors)
+{
+    QVector<ParsedRecord> results;
+
+    // 支持全角逗号和半角逗号
+    QString normalized = line;
+    normalized.replace(QStringLiteral("，"), QStringLiteral(","));
+    const QStringList parts = normalized.split(QStringLiteral(","), Qt::SkipEmptyParts);
+
+    QString jan;
+    QStringList serials;
+
+    for (const QString& part : parts) {
+        const QString p = part.trimmed();
+
+        // 提取GTIN (JAN)
+        if (p.startsWith(QStringLiteral("GTIN"), Qt::CaseInsensitive)) {
+            QString gtinValue = p.mid(4);  // 去掉"GTIN"前缀
+            // 去掉前导0
+            while (gtinValue.startsWith('0') && gtinValue.size() > 13) {
+                gtinValue = gtinValue.mid(1);
+            }
+            if (gtinValue.size() == 13) {
+                jan = gtinValue;
+            } else {
+                if (errors) errors->append(QStringLiteral("JANコードは13桁である必要があります（現在：%1桁）").arg(gtinValue.size()));
+            }
+        }
+
+        // 提取序列号（以S开头，保留完整，11位）
+        if (p.startsWith('S') && p.size() == 11) {
+            // 验证是否全是字母数字
+            bool valid = true;
+            for (const QChar& c : p) {
+                if (!c.isLetterOrNumber()) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) {
+                serials.append(p);
+            } else {
+                if (errors) errors->append(QStringLiteral("シリアル番号の形式が無効です：%1").arg(p));
+            }
+        } else if (p.startsWith('S') && p.size() != 11 && !p.startsWith(QStringLiteral("SSCC"), Qt::CaseInsensitive) && !p.startsWith(QStringLiteral("SCC"), Qt::CaseInsensitive)) {
+            // 以S开头但不是11位，且不是SSCC/SCC字段
+            if (errors) errors->append(QStringLiteral("シリアル番号は11桁である必要があります（現在：%1桁）：%2").arg(p.size()).arg(p));
+        }
+    }
+
+    // 为每个有效的序列号创建记录
+    if (!jan.isEmpty()) {
+        for (const QString& serial : serials) {
+            ParsedRecord rec;
+            rec.jan = jan;
+            rec.imei = serial;
+            rec.valid = true;
+            results.append(rec);
+        }
+    }
+
+    return results;
+}
+
+// ====================== tab_2: 显示错误信息 ======================
+void MainWindow::showTab2Error(const QString& text)
+{
+    if (ui->label_3) {
+        ui->label_3->setText(text);
+        ui->label_3->setStyleSheet(QStringLiteral("QLabel{ color:#cc0000; }"));  // 红色
+    }
+    if (ui->statusbar) {
+        ui->statusbar->setStyleSheet(QStringLiteral("QStatusBar{ color:#cc0000; }"));  // 红色
+        ui->statusbar->showMessage(text, 3000);
+        QTimer::singleShot(3000, this, [this]{
+            ui->statusbar->setStyleSheet(m_statusDefaultStyle);
+        });
+    }
+}
+
+// ====================== tab_2: 刷新listView_3 ======================
+void MainWindow::refreshTab2ListView()
+{
+    if (!m_modelTab2) return;
+    m_modelTab2->clear();
+
+    QSqlQuery q(m_db);
+    q.prepare("SELECT code13, imei15 FROM inbound "
+              "WHERE session_id=? AND kind='入荷登録' ORDER BY id ASC");
+    q.addBindValue(m_sessionId);
+
+    if (!q.exec()) {
+        qWarning() << "refreshTab2ListView failed:" << q.lastError();
+        return;
+    }
+
+    int seq = 1;
+    while (q.next()) {
+        const QString jan = q.value(0).toString();
+        const QString imei = q.value(1).toString();
+        const QString displayText = QStringLiteral("%1. %2 | %3")
+                                        .arg(seq, 2, 10, QChar('0'))
+                                        .arg(jan)
+                                        .arg(imei);
+        auto* item = new QStandardItem(displayText);
+        m_modelTab2->appendRow(item);
+        ++seq;
+    }
+
+    m_tab2Counter = seq - 1;
+    ui->lcdNumber_3->display(m_tab2Counter);
+}
+
+// ====================== tab_2: plainTextEdit Enter处理 ======================
+void MainWindow::onPlainTextEnter()
+{
+    const QString text = ui->plainTextEdit->toPlainText().trimmed();
+    if (text.isEmpty()) {
+        ui->plainTextEdit->clear();
+        return;
+    }
+
+    QStringList errors;
+    QVector<ParsedRecord> records;
+
+    // 判断数据类型并解析
+    if (text.startsWith(QStringLiteral("V4"), Qt::CaseInsensitive)) {
+        records = parseV4Line(text, &errors);
+    } else if (text.startsWith(QStringLiteral("V3"), Qt::CaseInsensitive)) {
+        records = parseV3Line(text, &errors);
+    } else {
+        showTab2Error(QStringLiteral("未知のデータ形式です。V3またはV4で始まる必要があります。"));
+        playSound(QStringLiteral("error"));
+        ui->plainTextEdit->clear();
+        return;
+    }
+
+    // 处理解析结果
+    int successCount = 0;
+    int duplicateCount = 0;
+    QStringList duplicateImeis;
+
+    for (const ParsedRecord& rec : records) {
+        if (!rec.valid) continue;
+
+        // 检查重复
+        if (existsInboundImeiInCurrentSession(rec.imei)) {
+            ++duplicateCount;
+            duplicateImeis.append(rec.imei);
+            continue;
+        }
+
+        // 写入数据库
+        QString errText;
+        if (insertInboundRow(QStringLiteral("入荷登録"), rec.jan, rec.imei, &errText)) {
+            ++successCount;
+        } else {
+            errors.append(errText);
+        }
+    }
+
+    // 更新UI
+    ui->plainTextEdit->clear();
+
+    // 刷新listView_3
+    refreshTab2ListView();
+
+    // 更新右侧会话记录（如果需要）
+    refreshSessionRecordsView();
+
+    // 更新lcdNumber（主计数器）
+    updateLcdFromDb();
+
+    // 显示结果
+    if (successCount > 0) {
+        // 清除之前的错误样式
+        if (ui->label_3) {
+            ui->label_3->setText(QStringLiteral("ログ"));
+            ui->label_3->setStyleSheet(QString());
+        }
+
+        showStatusOk(QStringLiteral("登録完了：%1件").arg(successCount));
+        playSound(QStringLiteral("success"));
+    }
+
+    // 显示错误（如果有）
+    if (!errors.isEmpty() || duplicateCount > 0) {
+        QStringList allErrors = errors;
+        if (duplicateCount > 0) {
+            allErrors.prepend(QStringLiteral("重複：このIMEI/シリアル番号は既に登録されています（%1件）").arg(duplicateCount));
+        }
+
+        const QString errorMsg = allErrors.join(QStringLiteral("; "));
+        if (ui->label_3) {
+            ui->label_3->setText(errorMsg);
+            ui->label_3->setStyleSheet(QStringLiteral("QLabel{ color:#cc0000; }"));
+        }
+
+        // 如果没有成功记录，播放错误音
+        if (successCount == 0) {
+            if (ui->statusbar) {
+                ui->statusbar->setStyleSheet(QStringLiteral("QStatusBar{ color:#cc0000; }"));
+                ui->statusbar->showMessage(errorMsg, 3000);
+                QTimer::singleShot(3000, this, [this]{
+                    ui->statusbar->setStyleSheet(m_statusDefaultStyle);
+                });
+            }
+            playSound(QStringLiteral("error"));
+        }
+    }
 }
