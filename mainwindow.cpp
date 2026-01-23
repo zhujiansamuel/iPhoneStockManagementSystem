@@ -163,6 +163,309 @@ static const CatRow kCatalogRows[] = {
     {"MG2K4J/A","iPhone Air",1024,"スカイブルー","2025-09-19","4549995647617"},
     };
 
+// ============ Other Products JAN -> Product Name Mapping ============
+// iPad, Magic Keyboard, Apple Watch 等产品的 JAN 到商品名映射
+static const QHash<QString, QString>& getOtherProductsJanMap() {
+    static const QHash<QString, QString> map = []() {
+        QHash<QString, QString> m;
+        // === iPad (A16) ===
+        m.insert("4549995560077", "iPad (A16) 11\" 128GB シルバー");
+        m.insert("4549995560084", "iPad (A16) 11\" 128GB ブルー");
+        m.insert("4549995560091", "iPad (A16) 11\" 128GB イエロー");
+        m.insert("4549995560107", "iPad (A16) 11\" 128GB ピンク");
+        m.insert("4549995560114", "iPad (A16) 11\" 256GB シルバー");
+        m.insert("4549995560121", "iPad (A16) 11\" 256GB ブルー");
+        m.insert("4549995560138", "iPad (A16) 11\" 256GB イエロー");
+        m.insert("4549995560145", "iPad (A16) 11\" 256GB ピンク");
+        m.insert("4549995560152", "iPad (A16) 11\" 512GB シルバー");
+        m.insert("4549995560169", "iPad (A16) 11\" 512GB ブルー");
+        m.insert("4549995560176", "iPad (A16) 11\" 512GB イエロー");
+        m.insert("4549995560183", "iPad (A16) 11\" 512GB ピンク");
+        m.insert("4549995560848", "iPad (A16) 11\" Cellular 128GB シルバー");
+        m.insert("4549995560886", "iPad (A16) 11\" Cellular 128GB ブルー");
+        m.insert("4549995560923", "iPad (A16) 11\" Cellular 128GB イエロー");
+        m.insert("4549995560961", "iPad (A16) 11\" Cellular 128GB ピンク");
+        m.insert("4549995561005", "iPad (A16) 11\" Cellular 256GB シルバー");
+        m.insert("4549995561043", "iPad (A16) 11\" Cellular 256GB ブルー");
+        m.insert("4549995561081", "iPad (A16) 11\" Cellular 256GB イエロー");
+        m.insert("4549995561128", "iPad (A16) 11\" Cellular 256GB ピンク");
+        m.insert("4549995561166", "iPad (A16) 11\" Cellular 512GB シルバー");
+        m.insert("4549995561203", "iPad (A16) 11\" Cellular 512GB ブルー");
+        m.insert("4549995561241", "iPad (A16) 11\" Cellular 512GB イエロー");
+        m.insert("4549995561289", "iPad (A16) 11\" Cellular 512GB ピンク");
+        // === iPad mini (A17 Pro) ===
+        m.insert("4549995526486", "iPad mini (A17 Pro) 128GB スペースグレイ");
+        m.insert("4549995526493", "iPad mini (A17 Pro) 128GB ブルー");
+        m.insert("4549995526509", "iPad mini (A17 Pro) 128GB スターライト");
+        m.insert("4549995526516", "iPad mini (A17 Pro) 128GB パープル");
+        m.insert("4549995526523", "iPad mini (A17 Pro) 256GB スペースグレイ");
+        m.insert("4549995526530", "iPad mini (A17 Pro) 256GB ブルー");
+        m.insert("4549995526547", "iPad mini (A17 Pro) 256GB スターライト");
+        m.insert("4549995526554", "iPad mini (A17 Pro) 256GB パープル");
+        m.insert("4549995530537", "iPad mini (A17 Pro) 512GB スペースグレイ");
+        m.insert("4549995530544", "iPad mini (A17 Pro) 512GB ブルー");
+        m.insert("4549995530551", "iPad mini (A17 Pro) 512GB スターライト");
+        m.insert("4549995530568", "iPad mini (A17 Pro) 512GB パープル");
+        m.insert("4549995526769", "iPad mini (A17 Pro) Cellular 128GB スペースグレイ");
+        m.insert("4549995526776", "iPad mini (A17 Pro) Cellular 128GB ブルー");
+        m.insert("4549995526783", "iPad mini (A17 Pro) Cellular 128GB スターライト");
+        m.insert("4549995526790", "iPad mini (A17 Pro) Cellular 128GB パープル");
+        m.insert("4549995526806", "iPad mini (A17 Pro) Cellular 256GB スペースグレイ");
+        m.insert("4549995526813", "iPad mini (A17 Pro) Cellular 256GB ブルー");
+        m.insert("4549995526820", "iPad mini (A17 Pro) Cellular 256GB スターライト");
+        m.insert("4549995526837", "iPad mini (A17 Pro) Cellular 256GB パープル");
+        m.insert("4549995530698", "iPad mini (A17 Pro) Cellular 512GB スペースグレイ");
+        m.insert("4549995530704", "iPad mini (A17 Pro) Cellular 512GB ブルー");
+        m.insert("4549995530711", "iPad mini (A17 Pro) Cellular 512GB スターライト");
+        m.insert("4549995530728", "iPad mini (A17 Pro) Cellular 512GB パープル");
+        // === iPad Air (M3) 11" ===
+        m.insert("4549995555233", "iPad Air (M3) 11\" 128GB スペースグレイ");
+        m.insert("4549995555240", "iPad Air (M3) 11\" 128GB ブルー");
+        m.insert("4549995555257", "iPad Air (M3) 11\" 128GB スターライト");
+        m.insert("4549995555264", "iPad Air (M3) 11\" 128GB パープル");
+        m.insert("4549995555271", "iPad Air (M3) 11\" 256GB スペースグレイ");
+        m.insert("4549995555288", "iPad Air (M3) 11\" 256GB ブルー");
+        m.insert("4549995555295", "iPad Air (M3) 11\" 256GB スターライト");
+        m.insert("4549995555301", "iPad Air (M3) 11\" 256GB パープル");
+        m.insert("4549995555318", "iPad Air (M3) 11\" 512GB スペースグレイ");
+        m.insert("4549995555325", "iPad Air (M3) 11\" 512GB ブルー");
+        m.insert("4549995555332", "iPad Air (M3) 11\" 512GB スターライト");
+        m.insert("4549995555349", "iPad Air (M3) 11\" 512GB パープル");
+        m.insert("4549995555356", "iPad Air (M3) 11\" 1TB スペースグレイ");
+        m.insert("4549995555363", "iPad Air (M3) 11\" 1TB ブルー");
+        m.insert("4549995555370", "iPad Air (M3) 11\" 1TB スターライト");
+        m.insert("4549995555387", "iPad Air (M3) 11\" 1TB パープル");
+        m.insert("4549995555752", "iPad Air (M3) 11\" Cellular 128GB スペースグレイ");
+        m.insert("4549995555769", "iPad Air (M3) 11\" Cellular 128GB ブルー");
+        m.insert("4549995555776", "iPad Air (M3) 11\" Cellular 128GB スターライト");
+        m.insert("4549995555783", "iPad Air (M3) 11\" Cellular 128GB パープル");
+        m.insert("4549995555790", "iPad Air (M3) 11\" Cellular 256GB スペースグレイ");
+        m.insert("4549995555806", "iPad Air (M3) 11\" Cellular 256GB ブルー");
+        m.insert("4549995555813", "iPad Air (M3) 11\" Cellular 256GB スターライト");
+        m.insert("4549995555820", "iPad Air (M3) 11\" Cellular 256GB パープル");
+        m.insert("4549995555837", "iPad Air (M3) 11\" Cellular 512GB スペースグレイ");
+        m.insert("4549995555844", "iPad Air (M3) 11\" Cellular 512GB ブルー");
+        m.insert("4549995555851", "iPad Air (M3) 11\" Cellular 512GB スターライト");
+        m.insert("4549995555868", "iPad Air (M3) 11\" Cellular 512GB パープル");
+        m.insert("4549995555875", "iPad Air (M3) 11\" Cellular 1TB スペースグレイ");
+        m.insert("4549995555882", "iPad Air (M3) 11\" Cellular 1TB ブルー");
+        m.insert("4549995555899", "iPad Air (M3) 11\" Cellular 1TB スターライト");
+        m.insert("4549995555905", "iPad Air (M3) 11\" Cellular 1TB パープル");
+        // === iPad Air (M3) 13" ===
+        m.insert("4549995556315", "iPad Air (M3) 13\" 128GB スペースグレイ");
+        m.insert("4549995556322", "iPad Air (M3) 13\" 128GB ブルー");
+        m.insert("4549995556339", "iPad Air (M3) 13\" 128GB スターライト");
+        m.insert("4549995556346", "iPad Air (M3) 13\" 128GB パープル");
+        m.insert("4549995556353", "iPad Air (M3) 13\" 256GB スペースグレイ");
+        m.insert("4549995556360", "iPad Air (M3) 13\" 256GB ブルー");
+        m.insert("4549995556377", "iPad Air (M3) 13\" 256GB スターライト");
+        m.insert("4549995556384", "iPad Air (M3) 13\" 256GB パープル");
+        m.insert("4549995556391", "iPad Air (M3) 13\" 512GB スペースグレイ");
+        m.insert("4549995556407", "iPad Air (M3) 13\" 512GB ブルー");
+        m.insert("4549995556414", "iPad Air (M3) 13\" 512GB スターライト");
+        m.insert("4549995556421", "iPad Air (M3) 13\" 512GB パープル");
+        m.insert("4549995556438", "iPad Air (M3) 13\" 1TB スペースグレイ");
+        m.insert("4549995556445", "iPad Air (M3) 13\" 1TB ブルー");
+        m.insert("4549995556452", "iPad Air (M3) 13\" 1TB スターライト");
+        m.insert("4549995556469", "iPad Air (M3) 13\" 1TB パープル");
+        m.insert("4549995556834", "iPad Air (M3) 13\" Cellular 128GB スペースグレイ");
+        m.insert("4549995556841", "iPad Air (M3) 13\" Cellular 128GB ブルー");
+        m.insert("4549995556858", "iPad Air (M3) 13\" Cellular 128GB スターライト");
+        m.insert("4549995556865", "iPad Air (M3) 13\" Cellular 128GB パープル");
+        m.insert("4549995556872", "iPad Air (M3) 13\" Cellular 256GB スペースグレイ");
+        m.insert("4549995556889", "iPad Air (M3) 13\" Cellular 256GB ブルー");
+        m.insert("4549995556896", "iPad Air (M3) 13\" Cellular 256GB スターライト");
+        m.insert("4549995556902", "iPad Air (M3) 13\" Cellular 256GB パープル");
+        m.insert("4549995556919", "iPad Air (M3) 13\" Cellular 512GB スペースグレイ");
+        m.insert("4549995556926", "iPad Air (M3) 13\" Cellular 512GB ブルー");
+        m.insert("4549995556933", "iPad Air (M3) 13\" Cellular 512GB スターライト");
+        m.insert("4549995556940", "iPad Air (M3) 13\" Cellular 512GB パープル");
+        m.insert("4549995556957", "iPad Air (M3) 13\" Cellular 1TB スペースグレイ");
+        m.insert("4549995556964", "iPad Air (M3) 13\" Cellular 1TB ブルー");
+        m.insert("4549995556971", "iPad Air (M3) 13\" Cellular 1TB スターライト");
+        m.insert("4549995556988", "iPad Air (M3) 13\" Cellular 1TB パープル");
+        // === iPad Pro (M5) 11" ===
+        m.insert("4549995616606", "iPad Pro (M5) 11\" 256GB スペースブラック");
+        m.insert("4549995616613", "iPad Pro (M5) 11\" 256GB シルバー");
+        m.insert("4549995616620", "iPad Pro (M5) 11\" 512GB スペースブラック");
+        m.insert("4549995616637", "iPad Pro (M5) 11\" 512GB シルバー");
+        m.insert("4549995616644", "iPad Pro (M5) 11\" 1TB スペースブラック");
+        m.insert("4549995616651", "iPad Pro (M5) 11\" 1TB シルバー");
+        m.insert("4549995616682", "iPad Pro (M5) 11\" 2TB スペースブラック");
+        m.insert("4549995616699", "iPad Pro (M5) 11\" 2TB シルバー");
+        m.insert("4549995616668", "iPad Pro (M5) 11\" 1TB Nano スペースブラック");
+        m.insert("4549995616675", "iPad Pro (M5) 11\" 1TB Nano シルバー");
+        m.insert("4549995616705", "iPad Pro (M5) 11\" 2TB Nano スペースブラック");
+        m.insert("4549995616712", "iPad Pro (M5) 11\" 2TB Nano シルバー");
+        m.insert("4549995616842", "iPad Pro (M5) 11\" Cellular 256GB スペースブラック");
+        m.insert("4549995616880", "iPad Pro (M5) 11\" Cellular 256GB シルバー");
+        m.insert("4549995616927", "iPad Pro (M5) 11\" Cellular 512GB スペースブラック");
+        m.insert("4549995616965", "iPad Pro (M5) 11\" Cellular 512GB シルバー");
+        m.insert("4549995617009", "iPad Pro (M5) 11\" Cellular 1TB スペースブラック");
+        m.insert("4549995617047", "iPad Pro (M5) 11\" Cellular 1TB シルバー");
+        m.insert("4549995617160", "iPad Pro (M5) 11\" Cellular 2TB スペースブラック");
+        m.insert("4549995617207", "iPad Pro (M5) 11\" Cellular 2TB シルバー");
+        m.insert("4549995617085", "iPad Pro (M5) 11\" Cellular 1TB Nano スペースブラック");
+        m.insert("4549995617122", "iPad Pro (M5) 11\" Cellular 1TB Nano シルバー");
+        m.insert("4549995617245", "iPad Pro (M5) 11\" Cellular 2TB Nano スペースブラック");
+        m.insert("4549995617283", "iPad Pro (M5) 11\" Cellular 2TB Nano シルバー");
+        // === iPad Pro (M5) 13" ===
+        m.insert("4549995616729", "iPad Pro (M5) 13\" 256GB スペースブラック");
+        m.insert("4549995616736", "iPad Pro (M5) 13\" 256GB シルバー");
+        m.insert("4549995616743", "iPad Pro (M5) 13\" 512GB スペースブラック");
+        m.insert("4549995616750", "iPad Pro (M5) 13\" 512GB シルバー");
+        m.insert("4549995616767", "iPad Pro (M5) 13\" 1TB スペースブラック");
+        m.insert("4549995616774", "iPad Pro (M5) 13\" 1TB シルバー");
+        m.insert("4549995616804", "iPad Pro (M5) 13\" 2TB スペースブラック");
+        m.insert("4549995616811", "iPad Pro (M5) 13\" 2TB シルバー");
+        m.insert("4549995616781", "iPad Pro (M5) 13\" 1TB Nano スペースブラック");
+        m.insert("4549995616798", "iPad Pro (M5) 13\" 1TB Nano シルバー");
+        m.insert("4549995616828", "iPad Pro (M5) 13\" 2TB Nano スペースブラック");
+        m.insert("4549995616835", "iPad Pro (M5) 13\" 2TB Nano シルバー");
+        m.insert("4549995617320", "iPad Pro (M5) 13\" Cellular 256GB スペースブラック");
+        m.insert("4549995617368", "iPad Pro (M5) 13\" Cellular 256GB シルバー");
+        m.insert("4549995617405", "iPad Pro (M5) 13\" Cellular 512GB スペースブラック");
+        m.insert("4549995617443", "iPad Pro (M5) 13\" Cellular 512GB シルバー");
+        m.insert("4549995617481", "iPad Pro (M5) 13\" Cellular 1TB スペースブラック");
+        m.insert("4549995617528", "iPad Pro (M5) 13\" Cellular 1TB シルバー");
+        m.insert("4549995617641", "iPad Pro (M5) 13\" Cellular 2TB スペースブラック");
+        m.insert("4549995617689", "iPad Pro (M5) 13\" Cellular 2TB シルバー");
+        m.insert("4549995617566", "iPad Pro (M5) 13\" Cellular 1TB Nano スペースブラック");
+        m.insert("4549995617603", "iPad Pro (M5) 13\" Cellular 1TB Nano シルバー");
+        m.insert("4549995617726", "iPad Pro (M5) 13\" Cellular 2TB Nano スペースブラック");
+        m.insert("4549995617764", "iPad Pro (M5) 13\" Cellular 2TB Nano シルバー");
+        // === Magic Keyboard ===
+        m.insert("4549995498158", "Magic Keyboard (iPad Pro) 11\" White JP");
+        m.insert("4549995504811", "Magic Keyboard (iPad Pro) 11\" White US");
+        m.insert("4549995504415", "Magic Keyboard (iPad Pro) 11\" White UK");
+        m.insert("4549995504774", "Magic Keyboard (iPad Pro) 11\" White CN");
+        m.insert("4549995504699", "Magic Keyboard (iPad Pro) 11\" White TW");
+        m.insert("4549995504736", "Magic Keyboard (iPad Pro) 11\" White KR");
+        m.insert("4549995498165", "Magic Keyboard (iPad Pro) 11\" Black JP");
+        m.insert("4549995504828", "Magic Keyboard (iPad Pro) 11\" Black US");
+        m.insert("4549995504422", "Magic Keyboard (iPad Pro) 11\" Black UK");
+        m.insert("4549995498172", "Magic Keyboard (iPad Pro) 13\" White JP");
+        m.insert("4549995498189", "Magic Keyboard (iPad Pro) 13\" Black JP");
+        m.insert("4549995567588", "Magic Keyboard (iPad Air) 11\" White JP");
+        m.insert("4549995613575", "Magic Keyboard (iPad Air) 11\" White US");
+        m.insert("4549995613551", "Magic Keyboard (iPad Air) 11\" White CN");
+        m.insert("4549995613513", "Magic Keyboard (iPad Air) 11\" White TW");
+        m.insert("4549995613537", "Magic Keyboard (iPad Air) 11\" White KR");
+        m.insert("4549995613490", "Magic Keyboard (iPad Air) 11\" White ES");
+        m.insert("4549995567595", "Magic Keyboard (iPad Air) 13\" White JP");
+        m.insert("4549995660203", "Magic Keyboard (iPad Air) 13\" Black JP");
+        m.insert("4549995364415", "Magic Keyboard Folio White JP");
+        // === Apple Watch Series 11 GPS 42mm ===
+        m.insert("4549995623345", "Watch S11 GPS 42mm ジェットブラック S/M");
+        m.insert("4549995622720", "Watch S11 GPS 42mm ジェットブラック M/L");
+        m.insert("4549995622768", "Watch S11 GPS 42mm スペースグレイ S/M");
+        m.insert("4549995622782", "Watch S11 GPS 42mm スペースグレイ M/L");
+        m.insert("4549995622829", "Watch S11 GPS 42mm ローズゴールド S/M");
+        m.insert("4549995622843", "Watch S11 GPS 42mm ローズゴールド M/L");
+        m.insert("4549995622881", "Watch S11 GPS 42mm シルバー S/M");
+        m.insert("4549995622904", "Watch S11 GPS 42mm シルバー M/L");
+        // === Apple Watch Series 11 GPS 46mm ===
+        m.insert("4549995622942", "Watch S11 GPS 46mm ジェットブラック S/M");
+        m.insert("4549995622966", "Watch S11 GPS 46mm ジェットブラック M/L");
+        m.insert("4549995623000", "Watch S11 GPS 46mm スペースグレイ S/M");
+        m.insert("4549995623024", "Watch S11 GPS 46mm スペースグレイ M/L");
+        m.insert("4549995623062", "Watch S11 GPS 46mm ローズゴールド S/M");
+        m.insert("4549995623086", "Watch S11 GPS 46mm ローズゴールド M/L");
+        m.insert("4549995623123", "Watch S11 GPS 46mm シルバー S/M");
+        m.insert("4549995623147", "Watch S11 GPS 46mm シルバー M/L");
+        // === Apple Watch Series 11 Cellular 42mm Aluminum ===
+        m.insert("4549995625837", "Watch S11 Cel 42mm ジェットブラック S/M");
+        m.insert("4549995625851", "Watch S11 Cel 42mm ジェットブラック M/L");
+        m.insert("4549995625899", "Watch S11 Cel 42mm スペースグレイ S/M");
+        m.insert("4549995625912", "Watch S11 Cel 42mm スペースグレイ M/L");
+        m.insert("4549995625950", "Watch S11 Cel 42mm ローズゴールド S/M");
+        m.insert("4549995625974", "Watch S11 Cel 42mm ローズゴールド M/L");
+        m.insert("4549995626018", "Watch S11 Cel 42mm シルバー S/M");
+        m.insert("4549995626032", "Watch S11 Cel 42mm シルバー M/L");
+        // === Apple Watch Series 11 Cellular 46mm Aluminum ===
+        m.insert("4549995626599", "Watch S11 Cel 46mm ジェットブラック S/M");
+        m.insert("4549995626636", "Watch S11 Cel 46mm ジェットブラック M/L");
+        m.insert("4549995626698", "Watch S11 Cel 46mm スペースグレイ S/M");
+        m.insert("4549995626711", "Watch S11 Cel 46mm スペースグレイ M/L");
+        m.insert("4549995626759", "Watch S11 Cel 46mm ローズゴールド S/M");
+        m.insert("4549995626773", "Watch S11 Cel 46mm ローズゴールド M/L");
+        m.insert("4549995626810", "Watch S11 Cel 46mm シルバー S/M");
+        m.insert("4549995626834", "Watch S11 Cel 46mm シルバー M/L");
+        // === Apple Watch Series 11 Cellular 42mm Titanium ===
+        m.insert("4549995626070", "Watch S11 Ti 42mm ナチュラル S/M");
+        m.insert("4549995626094", "Watch S11 Ti 42mm ナチュラル M/L");
+        m.insert("4549995626117", "Watch S11 Ti 42mm ナチュラル ミラネーゼ");
+        m.insert("4549995626155", "Watch S11 Ti 42mm スレート S/M");
+        m.insert("4549995626179", "Watch S11 Ti 42mm スレート M/L");
+        m.insert("4549995626193", "Watch S11 Ti 42mm スレート ミラネーゼ");
+        m.insert("4549995626230", "Watch S11 Ti 42mm ゴールド S/M");
+        m.insert("4549995626254", "Watch S11 Ti 42mm ゴールド M/L");
+        m.insert("4549995626278", "Watch S11 Ti 42mm ゴールド ミラネーゼ");
+        // === Apple Watch Series 11 Cellular 46mm Titanium ===
+        m.insert("4549995626872", "Watch S11 Ti 46mm ナチュラル S/M");
+        m.insert("4549995626896", "Watch S11 Ti 46mm ナチュラル M/L");
+        m.insert("4549995626919", "Watch S11 Ti 46mm ナチュラル ミラネーゼ S/M");
+        m.insert("4549995626933", "Watch S11 Ti 46mm ナチュラル ミラネーゼ M/L");
+        m.insert("4549995626957", "Watch S11 Ti 46mm スレート S/M");
+        m.insert("4549995626971", "Watch S11 Ti 46mm スレート M/L");
+        m.insert("4549995626995", "Watch S11 Ti 46mm スレート ミラネーゼ S/M");
+        m.insert("4549995627015", "Watch S11 Ti 46mm スレート ミラネーゼ M/L");
+        m.insert("4549995627039", "Watch S11 Ti 46mm ゴールド S/M");
+        m.insert("4549995627053", "Watch S11 Ti 46mm ゴールド M/L");
+        m.insert("4549995627077", "Watch S11 Ti 46mm ゴールド ミラネーゼ S/M");
+        m.insert("4549995627091", "Watch S11 Ti 46mm ゴールド ミラネーゼ M/L");
+        // === Apple Watch SE 3 GPS ===
+        m.insert("4549995615388", "Watch SE3 GPS 40mm スターライト S/M");
+        m.insert("4549995615395", "Watch SE3 GPS 40mm スターライト M/L");
+        m.insert("4549995615418", "Watch SE3 GPS 40mm ミッドナイト S/M");
+        m.insert("4549995615425", "Watch SE3 GPS 40mm ミッドナイト M/L");
+        m.insert("4549995615449", "Watch SE3 GPS 44mm スターライト S/M");
+        m.insert("4549995615456", "Watch SE3 GPS 44mm スターライト M/L");
+        m.insert("4549995615470", "Watch SE3 GPS 44mm ミッドナイト S/M");
+        m.insert("4549995615487", "Watch SE3 GPS 44mm ミッドナイト M/L");
+        // === Apple Watch SE 3 Cellular ===
+        m.insert("4549995618761", "Watch SE3 Cel 40mm スターライト S/M");
+        m.insert("4549995618808", "Watch SE3 Cel 40mm スターライト M/L");
+        m.insert("4549995618884", "Watch SE3 Cel 40mm ミッドナイト S/M");
+        m.insert("4549995618921", "Watch SE3 Cel 40mm ミッドナイト M/L");
+        m.insert("4549995619003", "Watch SE3 Cel 44mm スターライト S/M");
+        m.insert("4549995619041", "Watch SE3 Cel 44mm スターライト M/L");
+        m.insert("4549995619126", "Watch SE3 Cel 44mm ミッドナイト S/M");
+        m.insert("4549995619164", "Watch SE3 Cel 44mm ミッドナイト M/L");
+        // === Apple Watch Ultra 3 ===
+        m.insert("4549995629477", "Watch Ultra 3 オーシャン アンカーブルー");
+        m.insert("4549995629514", "Watch Ultra 3 オーシャン ブラック");
+        m.insert("4549995629552", "Watch Ultra 3 アルパイン ライトブルー S");
+        m.insert("4549995629576", "Watch Ultra 3 アルパイン ライトブルー M");
+        m.insert("4549995629590", "Watch Ultra 3 アルパイン ライトブルー L");
+        m.insert("4549995629637", "Watch Ultra 3 アルパイン ブラック S");
+        m.insert("4549995629675", "Watch Ultra 3 アルパイン ブラック M");
+        m.insert("4549995629699", "Watch Ultra 3 アルパイン ブラック L");
+        m.insert("4549995629736", "Watch Ultra 3 トレイル ナチュラル/ブルー S/M");
+        m.insert("4549995629750", "Watch Ultra 3 トレイル ブライトブルー M/L");
+        m.insert("4549995629798", "Watch Ultra 3 トレイル ブラック/チャコール S/M");
+        m.insert("4549995629835", "Watch Ultra 3 トレイル ブラック/チャコール M/L");
+        m.insert("4549995629873", "Watch Ultra 3 Tiミラネーゼ ナチュラル S");
+        m.insert("4549995629897", "Watch Ultra 3 Tiミラネーゼ ナチュラル M");
+        m.insert("4549995629934", "Watch Ultra 3 Tiミラネーゼ ナチュラル L");
+        m.insert("4549995629972", "Watch Ultra 3 Tiミラネーゼ ブラック S");
+        m.insert("4549995629996", "Watch Ultra 3 Tiミラネーゼ ブラック M");
+        m.insert("4549995630039", "Watch Ultra 3 Tiミラネーゼ ブラック L");
+        return m;
+    }();
+    return map;
+}
+
+// 查询 JAN 对应的商品名（优先查 Other Products 映射表）
+static QString productNameForJan(const QString& jan) {
+    const auto& map = getOtherProductsJanMap();
+    auto it = map.find(jan);
+    if (it != map.end()) {
+        return it.value();
+    }
+    return QString();  // 未找到
+}
+
 // 若 catalog 为空，则批量导入上面的 kCatalogRows
 static bool seedCatalogIfEmpty(QSqlDatabase& db) {
     QSqlQuery qc(db);
@@ -2112,10 +2415,27 @@ void MainWindow::refreshTab2ListView()
     while (q.next()) {
         const QString jan = q.value(0).toString();
         const QString imei = q.value(1).toString();
-        const QString displayText = QStringLiteral("%1. %2 | %3")
-                                        .arg(seq, 2, 10, QChar('0'))
-                                        .arg(jan)
-                                        .arg(imei);
+
+        // 查询商品名称（先查 Other Products 映射表，再查 catalog 数据库）
+        QString productName = productNameForJan(jan);
+        if (productName.isEmpty()) {
+            productName = displayNameForJan(m_db, jan);
+        }
+
+        QString displayText;
+        if (productName.isEmpty()) {
+            displayText = QStringLiteral("%1. %2 | %3")
+                              .arg(seq, 2, 10, QChar('0'))
+                              .arg(jan)
+                              .arg(imei);
+        } else {
+            displayText = QStringLiteral("%1. %2 | %3 | %4")
+                              .arg(seq, 2, 10, QChar('0'))
+                              .arg(jan)
+                              .arg(imei)
+                              .arg(productName);
+        }
+
         auto* item = new QStandardItem(displayText);
         m_modelTab2->appendRow(item);
         ++seq;
