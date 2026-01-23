@@ -1264,6 +1264,12 @@ void MainWindow::initConnections()
     // tab_2: plainTextEdit 的 Enter 键检测（通过 eventFilter）
     if (ui->plainTextEdit)
         ui->plainTextEdit->installEventFilter(this);
+
+    // tab_2: lineEdit_10/lineEdit_11 的 Enter 键检测
+    if (ui->lineEdit_10)
+        connect(ui->lineEdit_10, &QLineEdit::returnPressed, this, &MainWindow::onTab2JanEnter);
+    if (ui->lineEdit_11)
+        connect(ui->lineEdit_11, &QLineEdit::returnPressed, this, &MainWindow::onTab2ImeiEnter);
 }
 
 // ====================== SVG 显示 ======================
@@ -2542,4 +2548,182 @@ void MainWindow::onPlainTextEnter()
             playSound(QStringLiteral("error"));
         }
     }
+}
+
+// ====================== tab_2: label_2 日志显示 ======================
+void MainWindow::showTab2Label2Log(const QString& text, bool isError)
+{
+    if (!ui->label_2) return;
+
+    if (isError) {
+        ui->label_2->setStyleSheet(QStringLiteral("QLabel{ color:#cc0000; }"));  // 红色
+    } else {
+        ui->label_2->setStyleSheet(QStringLiteral("QLabel{ color:#0a6d2a; }"));  // 绿色
+    }
+    ui->label_2->setText(text);
+
+    // 3秒后恢复默认样式
+    QTimer::singleShot(3000, this, [this]{
+        if (ui->label_2) {
+            ui->label_2->setStyleSheet(QString());
+            ui->label_2->setText(QStringLiteral("ログ"));
+        }
+    });
+}
+
+// ====================== tab_2: lineEdit_10 JAN 输入处理 ======================
+void MainWindow::onTab2JanEnter()
+{
+    const QString jan = ui->lineEdit_10->text().trimmed();
+
+    // 验证：必须是13位数字
+    if (jan.size() != 13) {
+        showTab2Label2Log(QStringLiteral("JANコードは13桁である必要があります（現在：%1桁）").arg(jan.size()), true);
+        playSound(QStringLiteral("jan_error"));
+        ui->lineEdit_10->clear();
+        ui->lineEdit_10->setFocus();
+        return;
+    }
+
+    // 验证：必须全是数字
+    bool allDigits = true;
+    for (const QChar& c : jan) {
+        if (!c.isDigit()) {
+            allDigits = false;
+            break;
+        }
+    }
+    if (!allDigits) {
+        showTab2Label2Log(QStringLiteral("JANコードは数字のみである必要があります"), true);
+        playSound(QStringLiteral("jan_error"));
+        ui->lineEdit_10->clear();
+        ui->lineEdit_10->setFocus();
+        return;
+    }
+
+    // 验证：必须在硬编码数据或catalog数据库中找到对应商品
+    QString productName = productNameForJan(jan);
+    if (productName.isEmpty()) {
+        productName = displayNameForJan(m_db, jan);
+    }
+
+    if (productName.isEmpty()) {
+        showTab2Label2Log(QStringLiteral("該当する商品が見つかりません：%1").arg(jan), true);
+        playSound(QStringLiteral("jan_not_found"));
+        ui->lineEdit_10->clear();
+        ui->lineEdit_10->setFocus();
+        return;
+    }
+
+    // 验证通过：保存JAN，显示商品信息，跳转焦点
+    m_tab2PendingJan = jan;
+
+    // 在label_16显示商品信息（如果存在）
+    if (ui->label_16) {
+        ui->label_16->setText(productName);
+    }
+
+    showTab2Label2Log(QStringLiteral("商品確認：%1").arg(productName), false);
+    ui->lineEdit_11->setFocus();
+}
+
+// ====================== tab_2: lineEdit_11 IMEI/序列号 输入处理 ======================
+void MainWindow::onTab2ImeiEnter()
+{
+    const QString imei = ui->lineEdit_11->text().trimmed();
+
+    // 验证：必须是15位（IMEI）或11位（序列号）
+    if (imei.size() != 15 && imei.size() != 11) {
+        showTab2Label2Log(QStringLiteral("IMEI（15桁）またはシリアル番号（11桁）である必要があります（現在：%1桁）").arg(imei.size()), true);
+        playSound(QStringLiteral("imei_error"));
+        ui->lineEdit_11->clear();
+        ui->lineEdit_11->setFocus();
+        return;
+    }
+
+    // 如果是15位，验证必须全是数字（IMEI）
+    if (imei.size() == 15) {
+        bool allDigits = true;
+        for (const QChar& c : imei) {
+            if (!c.isDigit()) {
+                allDigits = false;
+                break;
+            }
+        }
+        if (!allDigits) {
+            showTab2Label2Log(QStringLiteral("IMEIは数字のみである必要があります"), true);
+            playSound(QStringLiteral("imei_error"));
+            ui->lineEdit_11->clear();
+            ui->lineEdit_11->setFocus();
+            return;
+        }
+    }
+
+    // 如果是11位，验证必须全是字母数字（序列号）
+    if (imei.size() == 11) {
+        bool allAlphaNum = true;
+        for (const QChar& c : imei) {
+            if (!c.isLetterOrNumber()) {
+                allAlphaNum = false;
+                break;
+            }
+        }
+        if (!allAlphaNum) {
+            showTab2Label2Log(QStringLiteral("シリアル番号は英数字のみである必要があります"), true);
+            playSound(QStringLiteral("imei_error"));
+            ui->lineEdit_11->clear();
+            ui->lineEdit_11->setFocus();
+            return;
+        }
+    }
+
+    // 检查是否有待处理的JAN
+    if (m_tab2PendingJan.isEmpty()) {
+        showTab2Label2Log(QStringLiteral("先にJANコードを入力してください"), true);
+        playSound(QStringLiteral("jan_error"));
+        ui->lineEdit_10->setFocus();
+        return;
+    }
+
+    // 重复检测
+    if (existsInboundImeiInCurrentSession(imei)) {
+        showTab2Label2Log(QStringLiteral("重複：このIMEI/シリアル番号は既に登録されています"), true);
+        playSound(QStringLiteral("imei_duplicate"));
+        ui->lineEdit_11->clear();
+        ui->lineEdit_11->setFocus();
+        return;
+    }
+
+    // 写入数据库
+    QString errText;
+    if (!insertInboundRow(QStringLiteral("入荷登録"), m_tab2PendingJan, imei, &errText)) {
+        showTab2Label2Log(QStringLiteral("登録失敗：%1").arg(errText), true);
+        playSound(QStringLiteral("error"));
+        ui->lineEdit_11->clear();
+        ui->lineEdit_11->setFocus();
+        return;
+    }
+
+    // 写入成功
+    showTab2Label2Log(QStringLiteral("登録完了：1件"), false);
+    showStatusOk(QStringLiteral("登録完了：1件"));
+    playSound(QStringLiteral("success"));
+
+    // 更新UI
+    refreshTab2ListView();
+    refreshSessionRecordsView();
+    updateLcdFromDb();
+
+    // 清空输入框，重置状态
+    ui->lineEdit_10->clear();
+    ui->lineEdit_11->clear();
+    m_tab2PendingJan.clear();
+
+    // 清空商品信息显示
+    if (ui->label_16) {
+        ui->label_16->setText(QStringLiteral("商品情報"));
+    }
+
+    // 焦点跳回lineEdit_10
+    ui->lineEdit_10->setFocus();
 }
