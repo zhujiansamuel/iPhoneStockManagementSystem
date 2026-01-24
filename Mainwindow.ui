@@ -664,12 +664,12 @@
        </rect>
       </property>
       <property name="title">
-       <string>GroupBox</string>
+       <string>単体入荷</string>
       </property>
       <widget class="QLineEdit" name="lineEdit_10">
        <property name="geometry">
         <rect>
-         <x>230</x>
+         <x>240</x>
          <y>50</y>
          <width>441</width>
          <height>51</height>
@@ -682,10 +682,10 @@
       <widget class="QLineEdit" name="lineEdit_11">
        <property name="geometry">
         <rect>
-         <x>440</x>
-         <y>40</y>
-         <width>261</width>
-         <height>41</height>
+         <x>240</x>
+         <y>120</y>
+         <width>441</width>
+         <height>51</height>
         </rect>
        </property>
        <property name="placeholderText">
@@ -695,24 +695,11 @@
       <widget class="QLCDNumber" name="lcdNumber_3">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>30</y>
+         <x>20</x>
+         <y>50</y>
          <width>201</width>
-         <height>111</height>
+         <height>121</height>
         </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_16">
-       <property name="geometry">
-        <rect>
-         <x>230</x>
-         <y>90</y>
-         <width>471</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>商品情報</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_2">
@@ -721,21 +708,11 @@
          <x>10</x>
          <y>190</y>
          <width>691</width>
-         <height>71</height>
+         <height>51</height>
         </rect>
        </property>
        <property name="text">
         <string>ログ</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="lineEdit_11">
-       <property name="geometry">
-        <rect>
-         <x>230</x>
-         <y>110</y>
-         <width>471</width>
-         <height>51</height>
-        </rect>
        </property>
       </widget>
      </widget>
@@ -762,20 +739,20 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>280</y>
+        <y>290</y>
         <width>711</width>
         <height>331</height>
        </rect>
       </property>
       <property name="title">
-       <string>GroupBox</string>
+       <string>グループ入荷</string>
       </property>
       <widget class="QPlainTextEdit" name="plainTextEdit">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>20</x>
          <y>50</y>
-         <width>691</width>
+         <width>671</width>
          <height>211</height>
         </rect>
        </property>
@@ -798,7 +775,7 @@
       <property name="geometry">
        <rect>
         <x>568</x>
-        <y>630</y>
+        <y>640</y>
         <width>151</width>
         <height>61</height>
        </rect>
@@ -816,7 +793,7 @@
      <x>0</x>
      <y>0</y>
      <width>1940</width>
-     <height>38</height>
+     <height>34</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
