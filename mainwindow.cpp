@@ -713,7 +713,6 @@ MainWindow::MainWindow(QWidget *parent)
     setSvgToView(ui->graphicsView_8,  QStringLiteral(":/Stock_Registration.svg"));
     setSvgToView(ui->graphicsView_9,  QStringLiteral(":/Temporary_Registration.svg"));
     setSvgToView(ui->graphicsView_10, QStringLiteral(":/Temporary_Registration_Write.svg"));
-    setSvgToView(ui->graphicsView_11, QStringLiteral(":/View_Summary.svg"));
     setSvgToView(ui->graphicsView_12, QStringLiteral(":/Excel_Output.svg"));
     setSvgToView(ui->graphicsView_13, QStringLiteral(":/Excel_Display.svg"));
 
@@ -1225,7 +1224,6 @@ void MainWindow::resizeEvent(QResizeEvent *e)
     fitAndZoom(ui->graphicsView_8);
     fitAndZoom(ui->graphicsView_9);
     fitAndZoom(ui->graphicsView_10);
-    fitAndZoom(ui->graphicsView_11);
     fitAndZoom(ui->graphicsView_12);
     fitAndZoom(ui->graphicsView_13);
 }
