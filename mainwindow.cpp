@@ -1268,6 +1268,10 @@ void MainWindow::initConnections()
         connect(ui->lineEdit_10, &QLineEdit::returnPressed, this, &MainWindow::onTab2JanEnter);
     if (ui->lineEdit_11)
         connect(ui->lineEdit_11, &QLineEdit::returnPressed, this, &MainWindow::onTab2ImeiEnter);
+
+    // tab_2: pushButton_2 Excel导出
+    if (ui->pushButton_2)
+        connect(ui->pushButton_2, &QPushButton::clicked, this, &MainWindow::exportTab2ToExcel);
 }
 
 // ====================== SVG 显示 ======================
@@ -2717,4 +2721,147 @@ void MainWindow::onTab2ImeiEnter()
 
     // 焦点跳回lineEdit_10
     ui->lineEdit_10->setFocus();
+}
+
+// ====================== tab_2: pushButton_2 Excel导出 ======================
+void MainWindow::exportTab2ToExcel()
+{
+    using namespace QXlsx;
+
+    // 从数据库读取当前会话的入荷登録记录
+    QSqlQuery q(m_db);
+    q.prepare("SELECT code13, imei15 FROM inbound "
+              "WHERE session_id=? AND kind='入荷登録' ORDER BY id ASC");
+    q.addBindValue(m_sessionId);
+
+    if (!q.exec()) {
+        showTab2Label2Log(QStringLiteral("データ取得失敗"), true);
+        return;
+    }
+
+    // 分组：IMEI（15位）和 シリアル番号（非15位）
+    struct Record {
+        QString jan;
+        QString productName;
+        QString code;  // IMEI or Serial
+    };
+    QVector<Record> imeiRecords;
+    QVector<Record> serialRecords;
+
+    while (q.next()) {
+        Record rec;
+        rec.jan = q.value(0).toString();
+        rec.code = q.value(1).toString();
+
+        // 获取商品名
+        rec.productName = productNameForJan(rec.jan);
+        if (rec.productName.isEmpty()) {
+            rec.productName = displayNameForJan(m_db, rec.jan);
+        }
+
+        // 根据code长度分组：15位为IMEI，其他为シリアル番号
+        if (rec.code.length() == 15) {
+            imeiRecords.append(rec);
+        } else {
+            serialRecords.append(rec);
+        }
+    }
+
+    if (imeiRecords.isEmpty() && serialRecords.isEmpty()) {
+        showTab2Label2Log(QStringLiteral("出力するデータがありません"), true);
+        return;
+    }
+
+    // 创建Excel文档
+    Document xlsx;
+
+    // 定义表头样式（蓝色背景）
+    Format headerFmt;
+    headerFmt.setFontBold(true);
+    headerFmt.setPatternBackgroundColor(QColor(68, 114, 196));  // 蓝色背景
+    headerFmt.setFontColor(Qt::white);
+    headerFmt.setBorderStyle(Format::BorderThin);
+    headerFmt.setHorizontalAlignment(Format::AlignHCenter);
+    headerFmt.setVerticalAlignment(Format::AlignVCenter);
+
+    // 定义数据样式
+    Format dataFmt;
+    dataFmt.setBorderStyle(Format::BorderThin);
+    dataFmt.setVerticalAlignment(Format::AlignVCenter);
+
+    Format dataFmtCenter;
+    dataFmtCenter.setBorderStyle(Format::BorderThin);
+    dataFmtCenter.setHorizontalAlignment(Format::AlignHCenter);
+    dataFmtCenter.setVerticalAlignment(Format::AlignVCenter);
+
+    int currentRow = 1;
+
+    // 写入IMEI组（如果有数据）
+    if (!imeiRecords.isEmpty()) {
+        // 表头
+        xlsx.write(currentRow, 1, QStringLiteral("番号"), headerFmt);
+        xlsx.write(currentRow, 2, QStringLiteral("商品名"), headerFmt);
+        xlsx.write(currentRow, 3, QStringLiteral("JANコード"), headerFmt);
+        xlsx.write(currentRow, 4, QStringLiteral("IMEI"), headerFmt);
+        ++currentRow;
+
+        // 数据行
+        int seq = 1;
+        for (const auto& rec : imeiRecords) {
+            xlsx.write(currentRow, 1, seq, dataFmtCenter);
+            xlsx.write(currentRow, 2, rec.productName, dataFmt);
+            xlsx.write(currentRow, 3, rec.jan, dataFmt);
+            xlsx.write(currentRow, 4, rec.code, dataFmt);
+            ++currentRow;
+            ++seq;
+        }
+
+        // 如果还有序列号组，空两行分隔
+        if (!serialRecords.isEmpty()) {
+            currentRow += 2;
+        }
+    }
+
+    // 写入シリアル番号组（如果有数据）
+    if (!serialRecords.isEmpty()) {
+        // 表头
+        xlsx.write(currentRow, 1, QStringLiteral("番号"), headerFmt);
+        xlsx.write(currentRow, 2, QStringLiteral("商品名"), headerFmt);
+        xlsx.write(currentRow, 3, QStringLiteral("JANコード"), headerFmt);
+        xlsx.write(currentRow, 4, QStringLiteral("シリアル番号"), headerFmt);
+        ++currentRow;
+
+        // 数据行
+        int seq = 1;
+        for (const auto& rec : serialRecords) {
+            xlsx.write(currentRow, 1, seq, dataFmtCenter);
+            xlsx.write(currentRow, 2, rec.productName, dataFmt);
+            xlsx.write(currentRow, 3, rec.jan, dataFmt);
+            xlsx.write(currentRow, 4, rec.code, dataFmt);
+            ++currentRow;
+            ++seq;
+        }
+    }
+
+    // 设置列宽
+    xlsx.setColumnWidth(1, 1, 8);   // 番号
+    xlsx.setColumnWidth(2, 2, 50);  // 商品名
+    xlsx.setColumnWidth(3, 3, 18);  // JANコード
+    xlsx.setColumnWidth(4, 4, 20);  // IMEI/シリアル番号
+
+    // 保存到桌面
+    const QString desk = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    QDir dir(desk);
+    if (!dir.exists()) dir.mkpath(".");
+    const QString filename = QStringLiteral("入荷登録_%1.xlsx")
+                                 .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    const QString path = dir.filePath(filename);
+
+    if (!xlsx.saveAs(path)) {
+        showTab2Label2Log(QStringLiteral("Excel出力失敗"), true);
+        return;
+    }
+
+    showTab2Label2Log(QStringLiteral("Excel出力完了"), false);
+    showStatusOk(QStringLiteral("Excel出力完了：%1").arg(path));
 }

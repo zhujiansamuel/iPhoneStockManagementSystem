@@ -191,6 +191,9 @@ private:
     void showTab2Error(const QString& text);      // label_3 错误提示（plainTextEdit用）
     void showTab2Label2Log(const QString& text, bool isError = false);  // label_2 操作日志（lineEdit_10/11用）
 
+    // tab_2 Excel导出
+    void exportTab2ToExcel();  // pushButton_2: tab_2专用Excel导出
+
     // 网络请求
     void sendPostRequest(const QVector<ExportRow>& rows);
 
