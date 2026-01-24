@@ -2559,14 +2559,7 @@ void MainWindow::showTab2Label2Log(const QString& text, bool isError)
         ui->label_2->setStyleSheet(QStringLiteral("QLabel{ color:#0a6d2a; }"));  // 绿色
     }
     ui->label_2->setText(text);
-
-    // 3秒后恢复默认样式
-    QTimer::singleShot(3000, this, [this]{
-        if (ui->label_2) {
-            ui->label_2->setStyleSheet(QString());
-            ui->label_2->setText(QStringLiteral("ログ"));
-        }
-    });
+    // 信息保持显示，直到有新的信息替换
 }
 
 // ====================== tab_2: lineEdit_10 JAN 输入处理 ======================
