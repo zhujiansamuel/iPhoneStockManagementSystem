@@ -1854,7 +1854,10 @@ void MainWindow::onReg2Enter()
     m_lcd2Counter = (m_lcd2Counter + 1) % 10;
     ui->lcdNumber_2->display(m_lcd2Counter);
     if (m_lcd2Counter == 0) {
-        playSound(QStringLiteral("count_reset"));  // 计数器清零时播放提示音
+        // 延迟播放，等待 success 音频播放完毕后再播放 count_reset
+        QTimer::singleShot(1000, this, [this]() {
+            playSound(QStringLiteral("count_reset"));
+        });
     }
     updateLcdFromDb();
     refreshSessionRecordsView();
