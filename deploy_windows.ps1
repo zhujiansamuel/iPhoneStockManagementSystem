@@ -1,20 +1,21 @@
 ﻿# ============================================
-# iPhone 库存管理系统 - Windows 高级打包脚本
+# iPhone Stock Management - Windows Deploy Script
 # ============================================
 #
-# 使用说明：
-# 1. 以管理员身份打开 PowerShell
-# 2. 如果遇到执行策略问题，运行: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-# 3. 运行此脚本: .\deploy_windows.ps1
+# Usage:
+# 1. Open PowerShell as Administrator
+# 2. If you encounter execution policy issues, run:
+#    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# 3. Run this script: .\deploy_windows.ps1
 #
-# 可选参数：
-#   -QtPath       Qt 安装路径 (例如: C:\Qt\6.5.0\msvc2019_64)
-#   -BuildType    构建类型 (Release 或 Debug，默认: Release)
-#   -CleanBuild   是否清理旧的构建 (默认: $true)
-#   -CreateZip    是否创建 ZIP 压缩包 (默认: $true)
+# Parameters:
+#   -QtPath       Qt install path (e.g. C:\Qt\6.10.1\msvc2022_64)
+#   -BuildType    Build type (Release or Debug, default: Release)
+#   -CleanBuild   Whether to clean old build (default: $true)
+#   -CreateZip    Whether to create ZIP archive (default: $true)
 #
-# 示例：
-#   .\deploy_windows.ps1 -QtPath "C:\Qt\6.5.0\msvc2019_64"
+# Examples:
+#   .\deploy_windows.ps1 -QtPath "C:\Qt\6.10.1\msvc2022_64"
 #   .\deploy_windows.ps1 -BuildType Debug -CreateZip $false
 # ============================================
 
@@ -25,10 +26,10 @@ param(
     [bool]$CreateZip = $true
 )
 
-# 设置错误时停止
+# Stop on error
 $ErrorActionPreference = "Stop"
 
-# 颜色输出函数
+# Color output functions
 function Write-ColorOutput($ForegroundColor, $Message) {
     $fc = $host.UI.RawUI.ForegroundColor
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
@@ -43,75 +44,77 @@ function Write-Header($Message) {
 }
 
 function Write-Step($StepNumber, $TotalSteps, $Message) {
-    Write-ColorOutput Yellow "[步骤 $StepNumber/$TotalSteps] $Message"
+    Write-ColorOutput Yellow "[Step $StepNumber/$TotalSteps] $Message"
 }
 
 function Write-Success($Message) {
-    Write-ColorOutput Green "[成功] $Message"
+    Write-ColorOutput Green "[OK] $Message"
 }
 
 function Write-Error-Custom($Message) {
-    Write-ColorOutput Red "[错误] $Message"
+    Write-ColorOutput Red "[ERROR] $Message"
 }
 
 function Write-Info($Message) {
-    Write-ColorOutput White "[信息] $Message"
+    Write-ColorOutput White "[INFO] $Message"
 }
 
-# 开始构建
-Write-Header "iPhone 库存管理系统 - Windows 构建"
+# Start build
+Write-Header "iPhone Stock Management - Windows Build"
 
-# 检测 Qt 路径
+# Detect Qt path
 if ($QtPath -eq "") {
-    Write-Info "未指定 Qt 路径，尝试自动检测..."
+    Write-Info "Qt path not specified, auto-detecting..."
 
-    # 尝试从 qmake 获取
+    # Try to get from qmake
     $qmakePath = Get-Command qmake -ErrorAction SilentlyContinue
     if ($qmakePath) {
         $QtPath = Split-Path (Split-Path $qmakePath.Source -Parent) -Parent
-        Write-Success "检测到 Qt 路径: $QtPath"
+        Write-Success "Detected Qt path: $QtPath"
     } else {
-        # 尝试常见的 Qt 安装位置
+        # Try common Qt install locations
         $commonPaths = @(
+            "C:\Qt\6.10.1\msvc2022_64",
+            "C:\Qt\6.10.0\msvc2022_64",
+            "C:\Qt\6.9.0\msvc2022_64",
             "C:\Qt\6.8.0\msvc2022_64",
             "C:\Qt\6.7.0\msvc2022_64",
             "C:\Qt\6.6.0\msvc2019_64",
-            "C:\Qt\6.5.0\msvc2019_64",
-            "C:\Qt\6.4.0\msvc2019_64"
+            "C:\Qt\6.5.0\msvc2019_64"
         )
 
         foreach ($path in $commonPaths) {
             if (Test-Path $path) {
                 $QtPath = $path
-                Write-Success "找到 Qt 安装: $QtPath"
+                Write-Success "Found Qt installation: $QtPath"
                 break
             }
         }
 
         if ($QtPath -eq "") {
-            Write-Error-Custom "未找到 Qt 安装，请使用 -QtPath 参数指定"
-            Write-Info "示例: .\deploy_windows.ps1 -QtPath 'C:\Qt\6.5.0\msvc2019_64'"
+            Write-Error-Custom "Qt installation not found. Please specify with -QtPath"
+            Write-Info "Example: .\deploy_windows.ps1 -QtPath 'C:\Qt\6.10.1\msvc2022_64'"
             exit 1
         }
     }
 }
 
-# 验证 Qt 路径
+# Validate Qt path
 if (-not (Test-Path "$QtPath\bin\qmake.exe")) {
-    Write-Error-Custom "无效的 Qt 路径: $QtPath"
-    Write-Info "请确保路径包含 bin\qmake.exe"
+    Write-Error-Custom "Invalid Qt path: $QtPath"
+    Write-Info "Please ensure the path contains bin\qmake.exe"
     exit 1
 }
 
-# 设置环境变量
+# Set environment variables
 $env:PATH = "$QtPath\bin;$env:PATH"
 $env:Qt6_DIR = "$QtPath"
 
-Write-Info "Qt 路径: $QtPath"
-Write-Info "构建类型: $BuildType"
+Write-Info "Qt path: $QtPath"
+Write-Info "Build type: $BuildType"
 
-# 检查必需工具
-Write-Step 1 6 "检查构建工具..."
+# Check required tools
+Write-Step 1 6 "Checking build tools..."
 
 $tools = @{
     "qmake" = "Qt qmake"
@@ -122,64 +125,64 @@ $tools = @{
 foreach ($tool in $tools.Keys) {
     $command = Get-Command $tool -ErrorAction SilentlyContinue
     if (-not $command) {
-        Write-Error-Custom "未找到 $($tools[$tool])"
+        Write-Error-Custom "Not found: $($tools[$tool])"
         if ($tool -eq "nmake") {
-            Write-Info "请在 'x64 Native Tools Command Prompt for VS' 中运行此脚本"
+            Write-Info "Please run this script in 'x64 Native Tools Command Prompt for VS'"
         }
         exit 1
     }
-    Write-Success "找到 $($tools[$tool]): $($command.Source)"
+    Write-Success "Found $($tools[$tool]): $($command.Source)"
 }
 
-# 显示版本信息
-Write-Info "`n工具版本:"
+# Show version info
+Write-Info "`nTool versions:"
 & qmake -v | Select-Object -First 2
 & cmake --version | Select-Object -First 1
 Write-Output ""
 
-# 清理旧构建
+# Clean old build
 if ($CleanBuild -and (Test-Path "build-windows")) {
-    Write-Step 2 6 "清理旧的构建目录..."
+    Write-Step 2 6 "Cleaning old build directory..."
     Remove-Item -Recurse -Force "build-windows"
-    Write-Success "清理完成"
+    Write-Success "Clean complete"
 }
 
-# 创建构建目录
-Write-Step 3 6 "创建构建目录..."
+# Create build directory
+Write-Step 3 6 "Creating build directory..."
 New-Item -ItemType Directory -Force -Path "build-windows" | Out-Null
 Set-Location "build-windows"
 
-# 配置 CMake
-Write-Step 4 6 "配置 CMake..."
+# Configure CMake
+Write-Step 4 6 "Configuring CMake..."
 & cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=$QtPath
 if ($LASTEXITCODE -ne 0) {
-    Write-Error-Custom "CMake 配置失败"
+    Write-Error-Custom "CMake configuration failed"
     Set-Location ..
     exit 1
 }
-Write-Success "CMake 配置完成"
+Write-Success "CMake configuration complete"
 
-# 编译
-Write-Step 5 6 "编译项目..."
+# Build
+Write-Step 5 6 "Building project..."
 & cmake --build . --config $BuildType
 if ($LASTEXITCODE -ne 0) {
-    Write-Error-Custom "编译失败"
+    Write-Error-Custom "Build failed"
     Set-Location ..
     exit 1
 }
-Write-Success "编译完成"
+Write-Success "Build complete"
 
-# 部署
-Write-Step 6 6 "部署应用程序..."
+# Deploy
+Write-Step 6 6 "Deploying application..."
 
-# 创建部署目录
+# Create deploy directory
 $deployDir = "deploy"
 if (Test-Path $deployDir) {
     Remove-Item -Recurse -Force $deployDir
 }
 New-Item -ItemType Directory -Force -Path $deployDir | Out-Null
 
-# 复制可执行文件
+# Copy executable
 $exeName = "iPhoneStockManagement.exe"
 $exePaths = @(
     "bin\$exeName",
@@ -191,41 +194,41 @@ foreach ($exePath in $exePaths) {
     if (Test-Path $exePath) {
         Copy-Item $exePath -Destination $deployDir
         $exeCopied = $true
-        Write-Success "复制可执行文件: $exePath"
+        Write-Success "Copied executable: $exePath"
         break
     }
 }
 
 if (-not $exeCopied) {
-    Write-Error-Custom "未找到可执行文件"
+    Write-Error-Custom "Executable not found"
     Set-Location ..
     exit 1
 }
 
-# 运行 windeployqt
+# Run windeployqt
 Set-Location $deployDir
-Write-Info "运行 windeployqt..."
+Write-Info "Running windeployqt..."
 & windeployqt $exeName --release --no-translations --no-system-d3d-compiler --no-opengl-sw
 if ($LASTEXITCODE -ne 0) {
-    Write-ColorOutput Yellow "[警告] windeployqt 返回非零退出码，但可能已部分完成"
+    Write-ColorOutput Yellow "[WARN] windeployqt returned non-zero exit code, but may have partially completed"
 }
 
-# 复制 SQL 驱动
-Write-Info "复制 SQL 驱动..."
+# Copy SQL driver
+Write-Info "Copying SQL driver..."
 $pluginsDir = & qmake -query QT_INSTALL_PLUGINS
 $sqlDriversSource = Join-Path $pluginsDir "sqldrivers"
 if (Test-Path $sqlDriversSource) {
     $sqlDriversDest = "sqldrivers"
     New-Item -ItemType Directory -Force -Path $sqlDriversDest | Out-Null
     Copy-Item "$sqlDriversSource\qsqlite.dll" -Destination $sqlDriversDest -ErrorAction SilentlyContinue
-    Write-Success "SQL 驱动已复制"
+    Write-Success "SQL driver copied"
 }
 
 Set-Location ..\..
 
-# 创建 ZIP 包
+# Create ZIP archive
 if ($CreateZip) {
-    Write-Info "创建 ZIP 压缩包..."
+    Write-Info "Creating ZIP archive..."
     $version = "0.1.0"
     $zipName = "iPhoneStockManagement_v${version}_Windows_x64.zip"
 
@@ -234,20 +237,20 @@ if ($CreateZip) {
     }
 
     Compress-Archive -Path "build-windows\$deployDir\*" -DestinationPath $zipName -CompressionLevel Optimal
-    Write-Success "ZIP 包已创建: $zipName"
+    Write-Success "ZIP archive created: $zipName"
 
     $zipSize = (Get-Item $zipName).Length / 1MB
-    Write-Info ("文件大小: {0:N2} MB" -f $zipSize)
+    Write-Info ("File size: {0:N2} MB" -f $zipSize)
 }
 
-# 完成
-Write-Header "构建完成！"
-Write-Success "输出目录: build-windows\$deployDir\"
-Write-Success "主程序: build-windows\$deployDir\$exeName"
+# Done
+Write-Header "Build Complete!"
+Write-Success "Output directory: build-windows\$deployDir\"
+Write-Success "Executable: build-windows\$deployDir\$exeName"
 
 if ($CreateZip) {
-    Write-Success "ZIP 包: $zipName"
+    Write-Success "ZIP archive: $zipName"
 }
 
-Write-Info "可以直接运行程序或分发deploy文件夹"
-Write-Info "双击 $exeName 即可运行"
+Write-Info "You can run the program directly or distribute the deploy folder"
+Write-Info "Double-click $exeName to run"
