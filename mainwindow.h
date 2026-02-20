@@ -1,33 +1,32 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QPointer>
-#include <QList>
-#include <QSet>
-#include <QHash>
-#include <QRegularExpression>
-#include <QtSql/QSqlDatabase>
 #include <QColor>
-#include <QVector>
-#include <QString>
+#include <QHash>
+#include <QList>
+#include <QMainWindow>
 #include <QNetworkAccessManager>
-
+#include <QPointer>
+#include <QRegularExpression>
+#include <QSet>
+#include <QString>
+#include <QVector>
+#include <QtSql/QSqlDatabase>
 
 class QEvent;
 
-namespace QXlsx { class Document; }
+namespace QXlsx {
+class Document;
+}
 
 struct ExportRow {
-    int      seq = 0;         // 番号（1 开始）
-    QString  jan;             // 13位 JAN
-    QString  productName;     // 机型名（“型号 容量 颜色”）
-    QString  imei;            // 15位 IMEI
-    int      qty = 1;         // 每行数量（默认 1）
-    double   unitPrice = 0.0; // 单价（目前未知，默认 0）
+  int seq = 0;            // 番号（1 开始）
+  QString jan;            // 13位 JAN
+  QString productName;    // 机型名（“型号 容量 颜色”）
+  QString imei;           // 15位 IMEI
+  int qty = 1;            // 每行数量（默认 1）
+  double unitPrice = 0.0; // 单价（目前未知，默认 0）
 };
-
-
 
 class QLineEdit;
 class QStandardItemModel;
@@ -36,167 +35,187 @@ class QGraphicsView;
 class QStatusBar;
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
+namespace Ui {
+class MainWindow;
+}
 QT_END_NAMESPACE
 
 // ---- 焦点高亮：获得焦点的 QLineEdit 背景置绿 ----
-class FocusHighlighter : public QObject
-{
-    Q_OBJECT
+class FocusHighlighter : public QObject {
+  Q_OBJECT
 public:
-    explicit FocusHighlighter(const QList<QLineEdit*>& targets, QObject* parent = nullptr);
-    bool eventFilter(QObject* obj, QEvent* event) override;
+  explicit FocusHighlighter(const QList<QLineEdit *> &targets,
+                            QObject *parent = nullptr);
+  bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
-    QList<QLineEdit*> m_targets;
-    QHash<QLineEdit*, QString> m_defaultStyles;
-    void clearAll();
+  QList<QLineEdit *> m_targets;
+  QHash<QLineEdit *, QString> m_defaultStyles;
+  void clearAll();
 };
 
 // ---- 扫码输入限制：只有指定的 QLineEdit 接受数字/退格（不拦截 Enter）----
-class ScannerOnlyGuard : public QObject
-{
-    Q_OBJECT
+class ScannerOnlyGuard : public QObject {
+  Q_OBJECT
 public:
-    explicit ScannerOnlyGuard(const QList<QLineEdit*>& allowed, QObject* parent = nullptr);
-    bool eventFilter(QObject* obj, QEvent* event) override;
+  explicit ScannerOnlyGuard(const QList<QLineEdit *> &allowed,
+                            QObject *parent = nullptr);
+  bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
-    QSet<QWidget*> m_allowed;
-    bool isDigitOrBackspace(int key) const;
+  QSet<QWidget *> m_allowed;
+  bool isDigitOrBackspace(int key) const;
 };
 
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
+class MainWindow : public QMainWindow {
+  Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+  explicit MainWindow(QWidget *parent = nullptr);
+  ~MainWindow();
 
 protected:
-    void resizeEvent(QResizeEvent *event) override;
-    bool eventFilter(QObject* obj, QEvent* e) override;
+  void resizeEvent(QResizeEvent *event) override;
+  bool eventFilter(QObject *obj, QEvent *e) override;
 
 private slots:
-    // 入荷登録
-    void onReg1Enter();   // lineEdit -> Enter -> 校验/跳转
-    void onReg2Enter();   // lineEdit_2 -> Enter -> 入库/复制/计数/10条清空
+  // 入荷登録
+  void onReg1Enter(); // lineEdit -> Enter -> 校验/跳转
+  void onReg2Enter(); // lineEdit_2 -> Enter -> 入库/复制/计数/10条清空
 
-    // 検索
-    void onSearch1Enter(); // lineEdit_6 -> Enter -> 校验/跳转
-    void onSearch2Enter(); // lineEdit_5 -> Enter -> label_13 & listView 规则5
+  // 検索
+  void onSearch1Enter(); // lineEdit_6 -> Enter -> 校验/跳转
+  void onSearch2Enter(); // lineEdit_5 -> Enter -> label_13 & listView 规则5
 
-    // 仮登録
-    void onTemp1Enter();   // lineEdit_4 -> Enter -> 校验/跳转
-    void onTemp2Enter();   // lineEdit_3 -> Enter -> 即时查重标红 & listView 规则6
+  // 仮登録
+  void onTemp1Enter(); // lineEdit_4 -> Enter -> 校验/跳转
+  void onTemp2Enter(); // lineEdit_3 -> Enter -> 即时查重标红 & listView 规则6
 
-    // 复位
-    void onResetClicked();
+  // 复位
+  void onResetClicked();
 
-    void exportToExcel();    // 生成 Excel
-    void openLastExport();   // 打开最近一次导出文件
+  void exportToExcel();  // 生成 Excel
+  void openLastExport(); // 打开最近一次导出文件
 
-    // tab_2: plainTextEdit解析
-    void onPlainTextEnter(); // plainTextEdit -> Enter -> 解析V3/V4数据
+  // tab_2: plainTextEdit解析
+  void onPlainTextEnter(); // plainTextEdit -> Enter -> 解析V3/V4数据
 
-    // tab_2: lineEdit_10/lineEdit_11 单独输入
-    void onTab2JanEnter();   // lineEdit_10 -> Enter -> 校验JAN/跳转
-    void onTab2ImeiEnter();  // lineEdit_11 -> Enter -> 校验IMEI/写入
+  // tab_2: lineEdit_10/lineEdit_11 单独输入
+  void onTab2JanEnter();  // lineEdit_10 -> Enter -> 校验JAN/跳转
+  void onTab2ImeiEnter(); // lineEdit_11 -> Enter -> 校验IMEI/写入
+
+  // Menu Actions
+  void onActionNewSession();      // action1: 新たな作業
+  void onActionLoadLastSession(); // action3: キャシュー読込
+
+  // Session Helpers
+  void startNewSession();
+  void loadSession(const QString &sessionId);
+
+  // Deletion feature
+  void onListViewContextMenu(const QPoint &pos);
+  void onActionDeleteSelected();
+  void updateDeleteActionState();
 
 private:
-    enum class ListSource { None, Search, Temp };
+  enum class ListSource { None, Search, Temp };
 
-    // —— UI/模型 —— //
-    Ui::MainWindow *ui;
-    QStandardItemModel* m_model;         // 左侧 listView
-    QStandardItemModel* m_modelSession;  // 右侧 listView_2（会话记录）
-    QStandardItemModel* m_modelTab2;     // tab_2 listView_3
-    QList<QLineEdit*>   m_scannerEdits;
-    FocusHighlighter*   m_highlighter;
-    ScannerOnlyGuard*   m_guard;
-    ListSource          m_source = ListSource::None;
-    int                 m_lcd2Counter = 0;   // lcdNumber_2 的本地计数器（0~9）
-    int                 m_tab2Counter = 0;   // tab_2 lcdNumber_3 的计数器
-    QString             m_tab2PendingJan;    // tab_2 lineEdit_10 验证通过的JAN（等待IMEI输入）
+  // —— UI/模型 —— //
+  Ui::MainWindow *ui;
+  QStandardItemModel *m_model;        // 左侧 listView
+  QStandardItemModel *m_modelSession; // 右侧 listView_2（会话记录）
+  QStandardItemModel *m_modelTab2;    // tab_2 listView_3
+  QList<QLineEdit *> m_scannerEdits;
+  FocusHighlighter *m_highlighter;
+  ScannerOnlyGuard *m_guard;
+  QAction *m_actionDelete; // 删除选中的记录
+  ListSource m_source = ListSource::None;
+  int m_lcd2Counter = 0;    // lcdNumber_2 的本地计数器（0~9）
+  int m_tab2Counter = 0;    // tab_2 lcdNumber_3 的计数器
+  QString m_tab2PendingJan; // tab_2 lineEdit_10 验证通过的JAN（等待IMEI输入）
 
-    // —— 数据库/会话 —— //
-    QSqlDatabase m_db;
-    QString      m_sessionId;
-    QString      m_statusDefaultStyle;
+  // —— 数据库/会话 —— //
+  QSqlDatabase m_db;
+  QString m_sessionId;
+  QString m_statusDefaultStyle;
 
-    // —— 网络请求 —— //
-    QNetworkAccessManager* m_networkManager;
+  // —— 网络请求 —— //
+  QNetworkAccessManager *m_networkManager;
 
-    // 初始化
-    void initConnections();
-    void initValidators();
+  // 初始化
+  void initConnections();
+  void initValidators();
 
-    // SVG
-    void setSvgToView(QGraphicsView* view,
-                      const QString& qrcPath,
-                      const QString& elementId = QString(),
-                      Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
+  // SVG
+  void setSvgToView(QGraphicsView *view, const QString &qrcPath,
+                    const QString &elementId = QString(),
+                    Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
 
-    // 列表处理
-    QString formatRecord(const QString& prefix, const QString& parts) const;       // 拼接已规范化的文本
-    QString formatRecord(const QString& prefix, const QStringList& parts) const;   // 重载
-    void appendListDirect(const QString& text);                                    // 入荷登録专用：不改来源
-    void addToListWithSource(const QString& text, ListSource src,
-                             const QColor& fgColor = QColor());                     // 支持传入前景色（红色标重）
+  // 列表处理
+  QString formatRecord(const QString &prefix,
+                       const QString &parts) const; // 拼接已规范化的文本
+  QString formatRecord(const QString &prefix,
+                       const QStringList &parts) const; // 重载
+  void appendListDirect(const QString &text); // 入荷登録专用：不改来源
+  void addToListWithSource(
+      const QString &text, ListSource src,
+      const QColor &fgColor = QColor()); // 支持传入前景色（红色标重）
 
-    // 状态栏绿色提示
-    void showStatusOk(const QString& text);
+  // 状态栏绿色提示
+  void showStatusOk(const QString &text);
 
-    // 数据库
-    bool initDatabase();
-    bool ensureSchema();
-    bool insertInboundRow(const QString& kind, const QString& code13, const QString& imei15, QString* errText = nullptr);
-    bool insertEntryLogRow(const QString& type, const QString& leftCode, const QString& rightCode);
-    bool existsInboundImeiInCurrentSession(const QString& imei15) const;
-    int  countInboundRowsForSessionKind(const QString& kind) const;
-    void updateLcdFromDb();
-    bool hasTempInListView() const;
-    bool flushAllListItemsToDb();  // 仮登録→入荷登録，逐条去重，重复标红
+  // 数据库
+  bool initDatabase();
+  bool ensureSchema();
+  bool insertInboundRow(const QString &kind, const QString &code13,
+                        const QString &imei15, QString *errText = nullptr);
+  bool insertEntryLogRow(const QString &type, const QString &leftCode,
+                         const QString &rightCode);
+  bool existsInboundImeiInCurrentSession(const QString &imei15) const;
+  int countInboundRowsForSessionKind(const QString &kind) const;
+  void updateLcdFromDb();
+  bool hasTempInListView() const;
+  bool flushAllListItemsToDb(); // 仮登録→入荷登録，逐条去重，重复标红
 
-    // 会话持久化
-    void chooseOrCreateSessionOnStartup();  // 启动弹窗 继续/新建
-    QString generateSessionId() const;
-    QString readLastSessionIdQSettings() const;
-    void    writeLastSessionIdQSettings(const QString& sid);
+  // 会话持久化
+  void chooseOrCreateSessionOnStartup(); // 启动弹窗 继续/新建
+  QString generateSessionId() const;
+  QString readLastSessionIdQSettings() const;
+  void writeLastSessionIdQSettings(const QString &sid);
 
-    // 会话记录面板
-    void refreshSessionRecordsView();
-    // Excel/导出相关
-    QString m_lastExportPath;                       // 最近一次导出的本地路径
-    QVector<ExportRow> gatherCurrentSessionRows() const;
-    bool writeExportedItemsSheet(QXlsx::Document& xlsx,
-                                 const QVector<ExportRow>& rows,
-                                 double* totalAmountOut);
-    bool writeWs3Sheet(QXlsx::Document& xlsx,
-                       const QVector<ExportRow>& rows);
+  // 会话记录面板
+  void refreshSessionRecordsView();
+  // Excel/导出相关
+  QString m_lastExportPath; // 最近一次导出的本地路径
+  QVector<ExportRow> gatherCurrentSessionRows() const;
+  bool writeExportedItemsSheet(QXlsx::Document &xlsx,
+                               const QVector<ExportRow> &rows,
+                               double *totalAmountOut);
+  bool writeWs3Sheet(QXlsx::Document &xlsx, const QVector<ExportRow> &rows);
 
-    // 音频提醒
-    void playSound(const QString& soundName);
+  // 音频提醒
+  void playSound(const QString &soundName);
 
-    // tab_2 解析辅助
-    struct ParsedRecord {
-        QString jan;    // 13位JAN
-        QString imei;   // 15位IMEI 或 11位序列号
-        bool    valid = false;
-    };
-    QVector<ParsedRecord> parseV4Line(const QString& line, QStringList* errors);
-    QVector<ParsedRecord> parseV3Line(const QString& line, QStringList* errors);
-    void refreshTab2ListView();
-    void showTab2Error(const QString& text);      // label_3 错误提示（plainTextEdit用）
-    void showTab2Label2Log(const QString& text, bool isError = false);  // label_2 操作日志（lineEdit_10/11用）
+  // tab_2 解析辅助
+  struct ParsedRecord {
+    QString jan;  // 13位JAN
+    QString imei; // 15位IMEI 或 11位序列号
+    bool valid = false;
+  };
+  QVector<ParsedRecord> parseV4Line(const QString &line, QStringList *errors);
+  QVector<ParsedRecord> parseV3Line(const QString &line, QStringList *errors);
+  void refreshTab2ListView();
+  void
+  showTab2Error(const QString &text); // label_3 错误提示（plainTextEdit用）
+  void showTab2Label2Log(
+      const QString &text,
+      bool isError = false); // label_2 操作日志（lineEdit_10/11用）
 
-    // tab_2 Excel导出
-    void exportTab2ToExcel();  // pushButton_2: tab_2专用Excel导出
+  // tab_2 Excel导出
+  void exportTab2ToExcel(); // pushButton_2: tab_2专用Excel导出
 
-    // 网络请求
-    void sendPostRequest(const QVector<ExportRow>& rows);
-
+  // 网络请求
+  void sendPostRequest(const QVector<ExportRow> &rows);
 };
 
 #endif // MAINWINDOW_H

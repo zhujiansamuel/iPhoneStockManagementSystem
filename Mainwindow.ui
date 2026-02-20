@@ -292,6 +292,9 @@
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="placeholderText">
+        <string>IMEI</string>
+       </property>
       </widget>
       <widget class="QLabel" name="label_8">
        <property name="geometry">
@@ -324,6 +327,9 @@
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="placeholderText">
+        <string>JAN (13桁)</string>
+       </property>
       </widget>
      </widget>
      <widget class="QGroupBox" name="groupBox_5">
@@ -336,7 +342,7 @@
        </rect>
       </property>
       <property name="title">
-       <string>情報</string>
+       <string>情報（法人）</string>
       </property>
       <widget class="QLineEdit" name="lineEdit_8">
        <property name="geometry">
@@ -371,40 +377,58 @@
       <widget class="QLabel" name="label_6">
        <property name="geometry">
         <rect>
-         <x>30</x>
+         <x>50</x>
          <y>60</y>
-         <width>111</width>
+         <width>61</width>
          <height>31</height>
         </rect>
        </property>
+       <property name="font">
+        <font>
+         <family>Microsoft YaHei UI</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
        <property name="text">
-        <string>username</string>
+        <string>名前</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_16">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>40</x>
          <y>120</y>
-         <width>151</width>
+         <width>71</width>
          <height>31</height>
         </rect>
        </property>
+       <property name="font">
+        <font>
+         <family>Microsoft YaHei UI</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
        <property name="text">
-        <string>batch_level_1</string>
+        <string>タグ１</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_18">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>40</x>
          <y>180</y>
-         <width>151</width>
+         <width>81</width>
          <height>31</height>
         </rect>
        </property>
+       <property name="font">
+        <font>
+         <family>Microsoft YaHei UI</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
        <property name="text">
-        <string>batch_level_2</string>
+        <string>タグ２</string>
        </property>
       </widget>
      </widget>
@@ -438,6 +462,9 @@
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="placeholderText">
+        <string>IMEI</string>
+       </property>
       </widget>
       <widget class="QLabel" name="label_13">
        <property name="geometry">
@@ -469,6 +496,9 @@
        </property>
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="placeholderText">
+        <string>JAN (13桁)</string>
        </property>
       </widget>
      </widget>
@@ -502,6 +532,9 @@
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="placeholderText">
+        <string>JAN (13桁)</string>
+       </property>
       </widget>
       <widget class="QLineEdit" name="lineEdit_2">
        <property name="geometry">
@@ -514,6 +547,9 @@
        </property>
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="placeholderText">
+        <string>IMEI</string>
        </property>
       </widget>
       <widget class="QLabel" name="label">
@@ -675,6 +711,9 @@
          <height>51</height>
         </rect>
        </property>
+       <property name="locale">
+        <locale language="Japanese" country="Japan"/>
+       </property>
        <property name="placeholderText">
         <string>JAN (13桁)</string>
        </property>
@@ -793,7 +832,7 @@
      <x>0</x>
      <y>0</y>
      <width>1940</width>
-     <height>34</height>
+     <height>41</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

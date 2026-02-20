@@ -1,7 +1,7 @@
 
 Add-Type -AssemblyName System.Drawing
 
-$inputPath = "$PSScriptRoot\app_icon_candidate.png"
+$inputPath = "$PSScriptRoot\ico.png"
 $outputPath = "$PSScriptRoot\app.ico"
 
 if (-not (Test-Path $inputPath)) {

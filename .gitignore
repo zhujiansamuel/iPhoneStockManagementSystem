@@ -13,6 +13,7 @@ cmake-build-*/
 *.dll
 *.zip
 *.msi
+*.crt
 
 # 但保留资源文件
 !app.rc

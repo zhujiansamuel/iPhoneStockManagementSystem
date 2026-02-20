@@ -34,7 +34,7 @@ set(HDR_FILES
 
 # ---- Windows 资源文件 ----
 if(WIN32)
-    #set(APP_ICON_RC "${CMAKE_CURRENT_SOURCE_DIR}/app.rc")
+    set(APP_ICON_RC "${CMAKE_CURRENT_SOURCE_DIR}/app.rc")
     enable_language(RC)
 endif()
 
@@ -58,6 +58,7 @@ qt_add_resources(${PROJECT_NAME} "app-resources"
     PREFIX "/"
     BASE "pic"
     FILES
+        pic/app.png
         pic/Reset.svg
         pic/Search.svg
         pic/Stock_Registration.svg
