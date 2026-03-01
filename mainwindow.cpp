@@ -1304,7 +1304,7 @@ void MainWindow::sendPostRequest(const QVector<ExportRow> &rows) {
 
   // 构建inventory_times对象
   QJsonObject inventoryTimes;
-  inventoryTimes["actual_arrival_at"] = currentTime;
+  inventoryTimes["checked_arrival_at_1"] = currentTime;
 
   // 构建完整的JSON请求体
   QJsonObject jsonObj;
@@ -1469,6 +1469,29 @@ void MainWindow::initConnections() {
   connect(ui->listView_3->selectionModel(),
           &QItemSelectionModel::selectionChanged, this,
           &MainWindow::updateDeleteActionState);
+
+  // API応答をステータスバーに表示
+  connect(m_networkManager, &QNetworkAccessManager::finished, this,
+          [this](QNetworkReply *reply) {
+            if (!ui->statusbar) {
+              reply->deleteLater();
+              return;
+            }
+            int code =
+                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute)
+                    .toInt();
+            if (code == 201) {
+              ui->statusbar->showMessage(
+                  QStringLiteral("API送信成功。"), 4000);
+            } else if (code == 207) {
+              ui->statusbar->showMessage(
+                  QStringLiteral("API送信：一部スキップ。"), 4000);
+            } else {
+              ui->statusbar->showMessage(
+                  QStringLiteral("API送信失敗 (%1)。").arg(code), 5000);
+            }
+            reply->deleteLater();
+          });
 }
 
 // ====================== SVG 显示 ======================
